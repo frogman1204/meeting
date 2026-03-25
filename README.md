@@ -1,4 +1,11 @@
-# MATLAB Baseline Reproduction (Single-File)
+# MATLAB Baseline Reproduction
+
+## Folder split (by area)
+- `opt/` : optimization solvers (`opt_p`, `opt_b`, `opt_n`)
+- `noma/`: channel/rate/sweep (`ch`, `rates`, `swp_p`, `swp_a`, `p2w`)
+- `pt/`  : plotting/table/save (`plt_p`, `plt_a`, `tbl`, `save_o`)
+- `oma/` : OMA stub (`oma`)
+- `cfg/` : defaults (`params`)
 
 ## Run
 ```matlab
@@ -9,21 +16,9 @@ or
 main
 ```
 
-## What it does
-- Reproduces 3 baselines with grid search:
-  - proposed joint-opt PD-NOMA AmBC (`xi`, `zeta` 2D grid)
-  - benchmark PD-NOMA AmBC (`xi` 1D grid, fixed `zeta`)
-  - pure PD-NOMA (`zeta=0`, `xi` 1D grid)
-- Runs:
-  - Sum-rate vs source power (`10:3:40` dBm)
-  - Sum-rate vs imperfect SIC `alpha` (`0.1:0.1:0.9`, fixed `40` dBm)
-- Saves outputs into `out/`:
-  - `fig_sumrate_power.png/.fig`
-  - `fig_sumrate_alpha.png/.fig`
-  - `res_power.csv`
-  - `res_alpha.csv`
-  - `all_results.mat`
-
-## Notes
-- Main logic is intentionally merged into `main.m` to minimize file count.
-- `main.m` contains local helper functions for channel generation, rates, optimization, sweeps, plotting, table build, and saving.
+## Outputs (`out/`)
+- `fig_sumrate_power.png`, `fig_sumrate_power.fig`
+- `fig_sumrate_alpha.png`, `fig_sumrate_alpha.fig`
+- `res_power.csv`
+- `res_alpha.csv`
+- `all_results.mat`
