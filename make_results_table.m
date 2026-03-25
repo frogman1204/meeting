@@ -1,4 +1,4 @@
-function T = make_results_table(xList, xType, res, schemeList)
+function T = make_results_table(xList, xType, avgSumRate, avgRiRate, avgRjRate, avgMaxMinRate, avgJainFairness, avgOptXi, avgOptZeta, schemeList)
 %MAKE_RESULTS_TABLE Build output table for CSV export.
 
 nX = numel(xList);
@@ -27,13 +27,13 @@ for ix = 1:nX
         end
 
         schemeCol(k) = string(schemeList{is});
-        sumCol(k) = res.avgSumRate(ix, is);
-        riCol(k) = res.avgRiRate(ix, is);
-        rjCol(k) = res.avgRjRate(ix, is);
-        minCol(k) = res.avgMaxMinRate(ix, is);
-        jainCol(k) = res.avgJainFairness(ix, is);
-        xiCol(k) = res.avgOptXi(ix, is);
-        zetaCol(k) = res.avgOptZeta(ix, is);
+        sumCol(k) = avgSumRate(ix, is);
+        riCol(k) = avgRiRate(ix, is);
+        rjCol(k) = avgRjRate(ix, is);
+        minCol(k) = avgMaxMinRate(ix, is);
+        jainCol(k) = avgJainFairness(ix, is);
+        xiCol(k) = avgOptXi(ix, is);
+        zetaCol(k) = avgOptZeta(ix, is);
         k = k + 1;
     end
 end

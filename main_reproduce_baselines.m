@@ -2,44 +2,52 @@
 
 clear; clc;
 
-cfg = default_params();
-cfg.alphaDefault = 0.5;
+[numMC, psDbmDefault, psDbmList, alphaList, noiseVar, zetaFixed, xiList, zetaList, seed, ...
+    schemeList, outDir, figPowerName, figAlphaName, csvPowerName, csvAlphaName, alphaDefault] = default_params();
 
-rng(cfg.seed);
+rng(seed);
 
 fprintf('=== Reproduction Start ===\n');
-fprintf('numMC=%d, noiseVar=%.3f, zetaFixed=%.2f\n', cfg.numMC, cfg.noiseVar, cfg.zetaFixed);
+fprintf('numMC=%d, noiseVar=%.3f, zetaFixed=%.2f\n', numMC, noiseVar, zetaFixed);
 
-resPower = sweep_power(cfg);
-resAlpha = sweep_alpha(cfg);
+[avgSumPower, avgRiPower, avgRjPower, avgMinPower, avgJainPower, avgXiPower, avgZetaPower, perMcPower] = ...
+    sweep_power(numMC, psDbmList, schemeList, alphaDefault, noiseVar, xiList, zetaList, zetaFixed);
 
-tablePower = make_results_table(cfg.psDbmList, 'Ps_dBm', resPower, cfg.schemeList);
-tableAlpha = make_results_table(cfg.alphaList, 'alpha', resAlpha, cfg.schemeList);
+[avgSumAlpha, avgRiAlpha, avgRjAlpha, avgMinAlpha, avgJainAlpha, avgXiAlpha, avgZetaAlpha, perMcAlpha] = ...
+    sweep_alpha(numMC, psDbmDefault, alphaList, schemeList, noiseVar, xiList, zetaList, zetaFixed);
 
-figPower = plot_sumrate_vs_power(cfg.psDbmList, resPower.avgSumRate, cfg.schemeList);
-figAlpha = plot_sumrate_vs_alpha(cfg.alphaList, resAlpha.avgSumRate, cfg.schemeList);
+tablePower = make_results_table(psDbmList, 'Ps_dBm', avgSumPower, avgRiPower, avgRjPower, avgMinPower, avgJainPower, avgXiPower, avgZetaPower, schemeList);
+tableAlpha = make_results_table(alphaList, 'alpha', avgSumAlpha, avgRiAlpha, avgRjAlpha, avgMinAlpha, avgJainAlpha, avgXiAlpha, avgZetaAlpha, schemeList);
 
-save_results(cfg, figPower, figAlpha, tablePower, tableAlpha, resPower, resAlpha);
+figPower = plot_sumrate_vs_power(psDbmList, avgSumPower, schemeList);
+figAlpha = plot_sumrate_vs_alpha(alphaList, avgSumAlpha, schemeList);
+
+rawData = {numMC, psDbmDefault, psDbmList, alphaList, noiseVar, zetaFixed, xiList, zetaList, alphaDefault, ...
+    avgSumPower, avgRiPower, avgRjPower, avgMinPower, avgJainPower, avgXiPower, avgZetaPower, perMcPower, ...
+    avgSumAlpha, avgRiAlpha, avgRjAlpha, avgMinAlpha, avgJainAlpha, avgXiAlpha, avgZetaAlpha, perMcAlpha};
+
+save_results(outDir, figPowerName, figAlphaName, csvPowerName, csvAlphaName, ...
+    figPower, figAlpha, tablePower, tableAlpha, 'all_results.mat', rawData);
 
 fprintf('\n=== Checks ===\n');
-for is = 1:numel(cfg.schemeList)
-    increasing = all(diff(resPower.avgSumRate(:, is)) >= -1e-9);
-    fprintf('Power trend (%s): %d\n', cfg.schemeList{is}, increasing);
+for is = 1:numel(schemeList)
+    increasing = all(diff(avgSumPower(:, is)) >= -1e-9);
+    fprintf('Power trend (%s): %d\n', schemeList{is}, increasing);
 end
-for is = 1:numel(cfg.schemeList)
-    decreasing = all(diff(resAlpha.avgSumRate(:, is)) <= 1e-9);
-    fprintf('Alpha trend (%s): %d\n', cfg.schemeList{is}, decreasing);
+for is = 1:numel(schemeList)
+    decreasing = all(diff(avgSumAlpha(:, is)) <= 1e-9);
+    fprintf('Alpha trend (%s): %d\n', schemeList{is}, decreasing);
 end
 
-idx40 = find(cfg.psDbmList == 40, 1);
+idx40 = find(psDbmList == 40, 1);
 if ~isempty(idx40)
-    sum40 = resPower.avgSumRate(idx40, :);
+    sum40 = avgSumPower(idx40, :);
     orderOK = (sum40(1) > sum40(2)) && (sum40(2) > sum40(3));
     fprintf('At 40 dBm, proposed > benchmark > pure: %d\n', orderOK);
     fprintf('40 dBm sum-rate: %.4f / %.4f / %.4f\n', sum40(1), sum40(2), sum40(3));
 end
 
-fprintf('Saved to: %s\n', cfg.outDir);
+fprintf('Saved to: %s\n', outDir);
 fprintf('=== Reproduction End ===\n');
 
 % NEXT STEP

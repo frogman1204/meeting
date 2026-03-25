@@ -1,77 +1,61 @@
-function res = sweep_power(cfg)
+function [avgSumRate, avgRiRate, avgRjRate, avgMaxMinRate, avgJainFairness, avgOptXi, avgOptZeta, perMcPower] = ...
+    sweep_power(numMC, psDbmList, schemeList, alphaDefault, noiseVar, xiList, zetaList, zetaFixed)
 %SWEEP_POWER Sweep source power and average optimized metrics.
 
-nP = numel(cfg.psDbmList);
-nS = numel(cfg.schemeList);
+nP = numel(psDbmList);
+nS = numel(schemeList);
 
-avgSum = zeros(nP, nS);
-avgRi = zeros(nP, nS);
-avgRj = zeros(nP, nS);
-avgMin = zeros(nP, nS);
-avgJain = zeros(nP, nS);
-avgXi = zeros(nP, nS);
-avgZeta = zeros(nP, nS);
+avgSumRate = zeros(nP, nS);
+avgRiRate = zeros(nP, nS);
+avgRjRate = zeros(nP, nS);
+avgMaxMinRate = zeros(nP, nS);
+avgJainFairness = zeros(nP, nS);
+avgOptXi = zeros(nP, nS);
+avgOptZeta = zeros(nP, nS);
 
-perMC = struct();
+perMcPower = cell(nP, 1);
 
 for ip = 1:nP
-    ps = power_dbm_to_watt(cfg.psDbmList(ip));
+    ps = power_dbm_to_watt(psDbmList(ip));
 
-    mcSum = zeros(cfg.numMC, nS);
-    mcRi = zeros(cfg.numMC, nS);
-    mcRj = zeros(cfg.numMC, nS);
-    mcMin = zeros(cfg.numMC, nS);
-    mcJain = zeros(cfg.numMC, nS);
-    mcXi = zeros(cfg.numMC, nS);
-    mcZeta = zeros(cfg.numMC, nS);
+    mcSum = zeros(numMC, nS);
+    mcRi = zeros(numMC, nS);
+    mcRj = zeros(numMC, nS);
+    mcMin = zeros(numMC, nS);
+    mcJain = zeros(numMC, nS);
+    mcXi = zeros(numMC, nS);
+    mcZeta = zeros(numMC, nS);
 
-    for imc = 1:cfg.numMC
-        chan = sample_rayleigh_channels();
+    for imc = 1:numMC
+        [hS_Ri, hS_Rj, hS_F, gF_Ri, gF_Rj] = sample_rayleigh_channels();
 
-        s1 = opt_proposed_grid(chan, ps, cfg.alphaDefault, cfg.noiseVar, cfg.xiList, cfg.zetaList);
-        s2 = opt_benchmark_grid(chan, ps, cfg.alphaDefault, cfg.noiseVar, cfg.xiList, cfg.zetaFixed);
-        s3 = opt_pure_noma_grid(chan, ps, cfg.alphaDefault, cfg.noiseVar, cfg.xiList);
-        sols = {s1, s2, s3};
+        [x1, z1, r1i, r1j, s1, m1, j1] = ...
+            opt_proposed_grid(hS_Ri, hS_Rj, hS_F, gF_Ri, gF_Rj, ps, alphaDefault, noiseVar, xiList, zetaList);
+        [x2, z2, r2i, r2j, s2, m2, j2] = ...
+            opt_benchmark_grid(hS_Ri, hS_Rj, hS_F, gF_Ri, gF_Rj, ps, alphaDefault, noiseVar, xiList, zetaFixed);
+        [x3, z3, r3i, r3j, s3, m3, j3] = ...
+            opt_pure_noma_grid(hS_Ri, hS_Rj, hS_F, gF_Ri, gF_Rj, ps, alphaDefault, noiseVar, xiList);
 
-        for is = 1:nS
-            s = sols{is};
-            mcSum(imc, is) = s.sumRate;
-            mcRi(imc, is) = s.rateRi;
-            mcRj(imc, is) = s.rateRj;
-            mcMin(imc, is) = s.maxMinRate;
-            mcJain(imc, is) = s.jain;
-            mcXi(imc, is) = s.xi;
-            mcZeta(imc, is) = s.zeta;
-        end
+        mcSum(imc, :) = [s1 s2 s3];
+        mcRi(imc, :) = [r1i r2i r3i];
+        mcRj(imc, :) = [r1j r2j r3j];
+        mcMin(imc, :) = [m1 m2 m3];
+        mcJain(imc, :) = [j1 j2 j3];
+        mcXi(imc, :) = [x1 x2 x3];
+        mcZeta(imc, :) = [z1 z2 z3];
     end
 
-    avgSum(ip, :) = mean(mcSum, 1);
-    avgRi(ip, :) = mean(mcRi, 1);
-    avgRj(ip, :) = mean(mcRj, 1);
-    avgMin(ip, :) = mean(mcMin, 1);
-    avgJain(ip, :) = mean(mcJain, 1);
-    avgXi(ip, :) = mean(mcXi, 1);
-    avgZeta(ip, :) = mean(mcZeta, 1);
+    avgSumRate(ip, :) = mean(mcSum, 1);
+    avgRiRate(ip, :) = mean(mcRi, 1);
+    avgRjRate(ip, :) = mean(mcRj, 1);
+    avgMaxMinRate(ip, :) = mean(mcMin, 1);
+    avgJainFairness(ip, :) = mean(mcJain, 1);
+    avgOptXi(ip, :) = mean(mcXi, 1);
+    avgOptZeta(ip, :) = mean(mcZeta, 1);
 
-    key = matlab.lang.makeValidName(sprintf('ps_%ddBm', cfg.psDbmList(ip)));
-    perMC.(key).sumRate = mcSum;
-    perMC.(key).rateRi = mcRi;
-    perMC.(key).rateRj = mcRj;
-    perMC.(key).maxMinRate = mcMin;
-    perMC.(key).jain = mcJain;
-    perMC.(key).xi = mcXi;
-    perMC.(key).zeta = mcZeta;
+    perMcPower{ip} = {mcSum, mcRi, mcRj, mcMin, mcJain, mcXi, mcZeta};
 
-    fprintf('[Power] %d dBm finished.\n', cfg.psDbmList(ip));
+    fprintf('[Power] %d dBm finished.\n', psDbmList(ip));
 end
-
-res.avgSumRate = avgSum;
-res.avgRiRate = avgRi;
-res.avgRjRate = avgRj;
-res.avgMaxMinRate = avgMin;
-res.avgJainFairness = avgJain;
-res.avgOptXi = avgXi;
-res.avgOptZeta = avgZeta;
-res.perMC = perMC;
 
 end

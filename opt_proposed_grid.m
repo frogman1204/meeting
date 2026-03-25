@@ -1,28 +1,30 @@
-function best = opt_proposed_grid(chan, ps, alpha, noiseVar, xiList, zetaList)
+function [bestXi, bestZeta, bestRi, bestRj, bestSum, bestMin, bestJain] = ...
+    opt_proposed_grid(hS_Ri, hS_Rj, hS_F, gF_Ri, gF_Rj, ps, alpha, noiseVar, xiList, zetaList)
 %OPT_PROPOSED_GRID Joint grid search over xi and zeta.
 
-best.sumRate = -inf;
-best.xi = xiList(1);
-best.zeta = zetaList(1);
-best.rateRi = 0;
-best.rateRj = 0;
-best.maxMinRate = 0;
-best.jain = 0;
+bestSum = -inf;
+bestXi = xiList(1);
+bestZeta = zetaList(1);
+bestRi = 0;
+bestRj = 0;
+bestMin = 0;
+bestJain = 0;
 
 for ix = 1:numel(xiList)
     for iz = 1:numel(zetaList)
         xi = xiList(ix);
         zeta = zetaList(iz);
-        met = calc_rates(chan, ps, xi, zeta, alpha, noiseVar);
+        [~, ~, ~, rateRi, rateRj, sumRate, maxMinRate, jain] = ...
+            calc_rates(hS_Ri, hS_Rj, hS_F, gF_Ri, gF_Rj, ps, xi, zeta, alpha, noiseVar);
 
-        if met.sumRate > best.sumRate
-            best.sumRate = met.sumRate;
-            best.xi = xi;
-            best.zeta = zeta;
-            best.rateRi = met.rateRi;
-            best.rateRj = met.rateRj;
-            best.maxMinRate = met.maxMinRate;
-            best.jain = met.jain;
+        if sumRate > bestSum
+            bestSum = sumRate;
+            bestXi = xi;
+            bestZeta = zeta;
+            bestRi = rateRi;
+            bestRj = rateRj;
+            bestMin = maxMinRate;
+            bestJain = jain;
         end
     end
 end
