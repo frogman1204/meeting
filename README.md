@@ -1,22 +1,28 @@
-# RSMA-AmBC Exploratory MATLAB Framework
+# AmBC_RSMA MATLAB Framework
 
-## Entry points
-- `run_medium.m` : medium mode only
-- `run_full.m` : full mode only
+You asked to group files by the first word prefix.
+This version is organized as:
 
-Both call `run_all_figures_core(params, mode_name)` and save outputs automatically to timestamped folders:
-- `out/medium_run_YYYYMMDD_HHMMSS/`
-- `out/full_run_YYYYMMDD_HHMMSS/`
+- `AmBC_RSMA.m` : main script entry
+- `run_medium.m`, `run_full.m` : mode wrappers
+- `run_pack.m` : all `run_*` family grouped
+- `solve_pack.m` : all `solve_*` family grouped
+- `apply_pack.m` : channel generation + impairment application
+- `calc_pack.m` : metric / gain / table helpers
+- `plot_pack.m` : all plot helpers
+- `save_pack.m` : output save pipeline
+- `get_pack.m` : medium/full parameter policy
 
-## Implemented schemes
-1. Pure NOMA
-2. NOMA-AmBC (Fixed rho)
-3. NOMA-AmBC (Optimized rho)
-4. Pure RSMA
-5. RSMA-AmBC (Fixed rho)
-6. RSMA-AmBC (Optimized rho)
-
-## Notes
-- OMA is intentionally excluded.
-- Optimized versions optimize `rho` only via grid search in this version.
-- BER is placeholder (`NaN`) with TODO comments.
+## Run
+```matlab
+run_medium
+```
+or
+```matlab
+run_full
+```
+or
+```matlab
+AmBC_RSMA('medium')
+AmBC_RSMA('full')
+```
