@@ -1,25 +1,22 @@
-# MATLAB Baseline Reproduction
+# RSMA-AmBC Exploratory MATLAB Framework
 
-Grouped by shared prefix before underscore:
-- `opt.m` : `opt_p`, `opt_b`, `opt_n`
-- `swp.m` : `swp_p`, `swp_a`
-- `plt.m` : `plt_p`, `plt_a`
-- `core.m`: `core_ch`, `core_p2w`, `core_rates`
-- `io.m`  : `io_tbl`, `io_save`
-- `params.m`, `main.m`, `run_main_repro.m`
+## Entry points
+- `run_medium.m` : medium mode only
+- `run_full.m` : full mode only
 
-## Run
-```matlab
-run_main_repro
-```
-or
-```matlab
-main
-```
+Both call `run_all_figures_core(params, mode_name)` and save outputs automatically to timestamped folders:
+- `out/medium_run_YYYYMMDD_HHMMSS/`
+- `out/full_run_YYYYMMDD_HHMMSS/`
 
-## Outputs (`out/`)
-- `fig_sumrate_power.png`, `fig_sumrate_power.fig`
-- `fig_sumrate_alpha.png`, `fig_sumrate_alpha.fig`
-- `res_power.csv`
-- `res_alpha.csv`
-- `all_results.mat`
+## Implemented schemes
+1. Pure NOMA
+2. NOMA-AmBC (Fixed rho)
+3. NOMA-AmBC (Optimized rho)
+4. Pure RSMA
+5. RSMA-AmBC (Fixed rho)
+6. RSMA-AmBC (Optimized rho)
+
+## Notes
+- OMA is intentionally excluded.
+- Optimized versions optimize `rho` only via grid search in this version.
+- BER is placeholder (`NaN`) with TODO comments.

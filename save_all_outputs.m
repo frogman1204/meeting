@@ -1,0 +1,28 @@
+function save_all_outputs(out_dir, params, all_results, tables, fig_items, summary_lines)
+%SAVE_ALL_OUTPUTS Save figures, tables, params, and summary.
+
+if ~exist(out_dir, 'dir')
+    mkdir(out_dir);
+end
+
+for i = 1:numel(fig_items)
+    f = fig_items{i}.fig;
+    name = fig_items{i}.name;
+    saveas(f, fullfile(out_dir, [name '.png']));
+    savefig(f, fullfile(out_dir, [name '.fig']));
+end
+
+for i = 1:numel(tables)
+    writetable(tables{i}.table, fullfile(out_dir, tables{i}.name));
+end
+
+save(fullfile(out_dir, 'params.mat'), 'params');
+save(fullfile(out_dir, 'all_results.mat'), 'all_results');
+
+fid = fopen(fullfile(out_dir, 'summary.txt'), 'w');
+for i = 1:numel(summary_lines)
+    fprintf(fid, '%s\n', summary_lines{i});
+end
+fclose(fid);
+
+end
