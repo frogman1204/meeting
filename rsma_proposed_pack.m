@@ -19,10 +19,19 @@ end
 end
 
 function met = local_rsma_eval(ch, Pt, sic_err, sigma2, rho, rate_threshold, rho_opt)
-[R1, R2] = core_rates_rsma(ch, Pt, sic_err, sigma2, rho);
+[R1, R2, rs] = core_rates_rsma(ch, Pt, sic_err, sigma2, rho);
 
 total_power = Pt + 0.15 + 0.05*rho;
 met = calc_pack('compute_metrics_scheme', R1, R2, total_power, rho, rho_opt, rate_threshold);
+met.C1 = rs.C1;
+met.C2 = rs.C2;
+met.common_rate = rs.common_rate;
+met.common_rate_u1 = rs.common_rate_u1;
+met.common_rate_u2 = rs.common_rate_u2;
+met.sinr_common_u1 = rs.sinr_common_u1;
+met.sinr_common_u2 = rs.sinr_common_u2;
+met.sinr_private_u1 = rs.sinr_private_u1;
+met.sinr_private_u2 = rs.sinr_private_u2;
 end
 
 function met = local_rsma_opt(ch, Pt, sic_err, sigma2, rho_grid, rate_threshold)

@@ -23,6 +23,8 @@ This version is organized as:
 - RSMA proposed path: `pure_rsma`, `rsma_fixed`, `rsma_opt` -> `rsma_proposed_pack.m`
 - RSMA signal model in `core_rates_rsma.m`:
   `x = sqrt(Pc)*sc + sqrt(P1)*s1 + sqrt(P2)*s2`, with `Pc + P1 + P2 = Ps`.
+- RSMA common-rate handling:
+  `Rc = min(Rc_user1, Rc_user2)` and `Rc` is split into `C1` and `C2`.
 
 ## Run
 ```matlab
