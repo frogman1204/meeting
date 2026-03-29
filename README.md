@@ -26,6 +26,10 @@ To run full mode, edit `main.m` and set:
 mode_name = 'full';
 ```
 
+## Output folders
+- Full outputs (figures/mat/summary/csv): `out/<mode>_run_yyyymmdd_HHMMSS/`
+- CSV-only exports (for quick spreadsheet review): `result/yyyymmdd_HHMMSS/`
+
 ## File change summary
 - Newly added in this update:
   - `run.m`, `core.m`, `opt.m`
