@@ -21,9 +21,9 @@ The script you execute is `main.m`.
 ```matlab
 main
 ```
-or
+To run full mode, edit `main.m` and set:
 ```matlab
-main('full')
+mode_name = 'full';
 ```
 
 ## File change summary
