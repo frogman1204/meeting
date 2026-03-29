@@ -21,6 +21,8 @@ This version is organized as:
 ## Role split
 - NOMA baseline path: `pure_noma`, `noma_fixed`, `noma_opt` -> `noma_baseline_pack.m`
 - RSMA proposed path: `pure_rsma`, `rsma_fixed`, `rsma_opt` -> `rsma_proposed_pack.m`
+- RSMA signal model in `core_rates_rsma.m`:
+  `x = sqrt(Pc)*sc + sqrt(P1)*s1 + sqrt(P2)*s2`, with `Pc + P1 + P2 = Ps`.
 
 ## Run
 ```matlab
