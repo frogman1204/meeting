@@ -3,7 +3,7 @@ function varargout = apply_pack(mode, varargin)
 
 switch lower(mode)
     case 'generate_channels'
-        varargout{1} = local_generate_channels();
+        varargout{1} = core_ch();
     case 'apply_csi_error'
         varargout{1} = local_apply_csi_error(varargin{1}, varargin{2});
     case 'apply_blockage_effect'
@@ -12,14 +12,6 @@ switch lower(mode)
         error('Unknown apply mode: %s', mode);
 end
 
-end
-
-function ch = local_generate_channels()
-ch.hSR1 = (randn + 1i*randn)/sqrt(2);
-ch.hSR2 = (randn + 1i*randn)/sqrt(2);
-ch.hSF = (randn + 1i*randn)/sqrt(2);
-ch.gFR1 = (randn + 1i*randn)/sqrt(2);
-ch.gFR2 = (randn + 1i*randn)/sqrt(2);
 end
 
 function ch_e = local_apply_csi_error(ch, csi_err)

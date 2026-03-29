@@ -14,6 +14,9 @@ This version is organized as:
 - `plot_pack.m` : all plot helpers
 - `save_pack.m` : output save pipeline
 - `get_pack.m` : medium/full parameter policy
+- `core_ch.m` : shared channel generation
+- `core_rates.m` : NOMA baseline 2-user rates
+- `core_rates_rsma.m` : RSMA 2-user rates
 
 ## Role split
 - NOMA baseline path: `pure_noma`, `noma_fixed`, `noma_opt` -> `noma_baseline_pack.m`
