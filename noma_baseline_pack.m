@@ -73,6 +73,9 @@ for ir = 1:numel(rho_grid)
 end
 
 best_met.rho_opt = best_rho;
+best_met.rho_feasible_max = rho_max_feasible;
+best_met.hit_feasible_bound = abs(best_rho - rho_max_feasible) <= 1e-9;
+best_met.infeasible_skip_frac = num_skipped / max(num_before, 1);
 met = best_met;
 if do_log
     fprintf('[noma_opt] best rho=%.3f | max-min=%.4f | sum-rate=%.4f\n', ...

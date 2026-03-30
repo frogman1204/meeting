@@ -39,33 +39,16 @@ function out_dir = run_core(params, mode_name)
 rng(params.rng_seed);
 ts = datestr(now, 'yyyymmdd_HHMMSS');
 out_dir = fullfile('out', sprintf('%s_run_%s', mode_name, ts));
+enabled = local_get_or(params, 'enabled_sweeps', {'power','csi','blockage','rho','sic','tags'});
 
 fprintf('\n[run] mode=%s | numMC=%d | start=%s\n', mode_name, params.numMC, ts);
 
-sw = tic;
-fprintf('[run] sweep power: start\n');
-res_power = run_sweep_local('power', params);
-fprintf('[run] sweep power: done (%.2fs)\n', toc(sw));
-sw = tic;
-fprintf('[run] sweep csi: start\n');
-res_csi = run_sweep_local('csi', params);
-fprintf('[run] sweep csi: done (%.2fs)\n', toc(sw));
-sw = tic;
-fprintf('[run] sweep blockage: start\n');
-res_blk = run_sweep_local('blockage', params);
-fprintf('[run] sweep blockage: done (%.2fs)\n', toc(sw));
-sw = tic;
-fprintf('[run] sweep rho: start\n');
-res_rho = run_sweep_local('rho', params);
-fprintf('[run] sweep rho: done (%.2fs)\n', toc(sw));
-sw = tic;
-fprintf('[run] sweep sic: start\n');
-res_sic = run_sweep_local('sic', params);
-fprintf('[run] sweep sic: done (%.2fs)\n', toc(sw));
-sw = tic;
-fprintf('[run] sweep tags: start\n');
-res_tags = run_sweep_tags_local(params);
-fprintf('[run] sweep tags: done (%.2fs)\n', toc(sw));
+res_power = run_or_empty('power', enabled, params);
+res_csi = run_or_empty('csi', enabled, params);
+res_blk = run_or_empty('blockage', enabled, params);
+res_rho = run_or_empty('rho', enabled, params);
+res_sic = run_or_empty('sic', enabled, params);
+res_tags = run_or_empty('tags', enabled, params);
 
 all_results = struct('power',res_power,'csi',res_csi,'blockage',res_blk,'rho',res_rho,'sic',res_sic,'tags',res_tags);
 tables = {
@@ -106,6 +89,22 @@ print_scheme_metrics_local(params, res_power);
 save_pack(out_dir, params, all_results, tables, figs, summary);
 end
 
+function res = run_or_empty(kind, enabled, params)
+if any(strcmpi(enabled, kind))
+    sw = tic;
+    fprintf('[run] sweep %s: start\n', kind);
+    if strcmpi(kind, 'tags')
+        res = run_sweep_tags_local(params);
+    else
+        res = run_sweep_local(kind, params);
+    end
+    fprintf('[run] sweep %s: done (%.2fs)\n', kind, toc(sw));
+else
+    fprintf('[run] sweep %s: skipped by config\n', kind);
+    res = local_empty_result(kind, params.scheme_names);
+end
+end
+
 function res = run_sweep_local(kind, p)
 switch lower(kind)
  case 'power', xvec=p.Pt_dBm_vec; xlab='Transmit power (dBm)';
@@ -118,6 +117,9 @@ end
 ns=numel(p.scheme_names); nx=numel(xvec); fns={'R1','R2','sum_rate','max_min_rate','jain_fairness','energy_efficiency','rho_used','rho_opt','ber_tag','ber_user1','ber_user2','outage_flag'};
 for k=1:numel(fns), res.(fns{k})=nan(nx,ns); end
 fprintf('[sweep:%s] x_count=%d | numMC=%d\n', kind, nx, p.numMC);
+if strcmp(kind,'rho')
+    fprintf('[sweep:rho] note: optimized schemes use best rho subject to rho <= x and feasibility.\n');
+end
 tick_mc = max(1, floor(p.numMC/10));
 for ix=1:nx
     t_ix = tic;
@@ -129,12 +131,33 @@ for ix=1:nx
     if strcmp(kind,'rho'), rho_fixed=xvec(ix); rho_grid=p.rho_grid(p.rho_grid<=xvec(ix)); if isempty(rho_grid), rho_grid=xvec(ix); end, end
     fprintf('[sweep:%s] x %d/%d | value=%.4g\n', kind, ix, nx, xvec(ix));
     tmp=zeros(p.numMC,ns,12);
+    noma_rho_sel = nan(p.numMC,1); noma_rho_max = nan(p.numMC,1); noma_hit = nan(p.numMC,1); noma_skip = nan(p.numMC,1);
+    rsma_zeta_sel = nan(p.numMC,1); rsma_zeta_max = nan(p.numMC,1); rsma_hit = nan(p.numMC,1); rsma_skip = nan(p.numMC,1);
+    rsma_ac = nan(p.numMC,1); rsma_a1 = nan(p.numMC,1); rsma_a2 = nan(p.numMC,1); rsma_mu = nan(p.numMC,1);
+    rsma_pc = nan(p.numMC,1); rsma_p1 = nan(p.numMC,1); rsma_p2 = nan(p.numMC,1); rsma_all_common = nan(p.numMC,1);
     for imc=1:p.numMC
         if imc == 1 || imc == p.numMC || mod(imc, tick_mc) == 0
             fprintf('  [sweep:%s x:%d/%d] MC %d/%d\n', kind, ix, nx, imc, p.numMC);
         end
         ch=apply_pack('generate_channels'); ch=apply_pack('apply_csi_error',ch,csi); ch=apply_pack('apply_blockage_effect',ch,blk);
         sols={solve_pack('pure_noma',ch,Pt,sic,p.sigma2,0,p.rate_threshold,p.harvest_cfg), solve_pack('noma_fixed',ch,Pt,sic,p.sigma2,rho_fixed,p.rate_threshold,p.harvest_cfg), solve_pack('noma_opt',ch,Pt,sic,p.sigma2,rho_grid,p.rate_threshold,p.harvest_cfg), solve_pack('pure_rsma',ch,Pt,sic,p.sigma2,0,p.rate_threshold,p.harvest_cfg), solve_pack('rsma_fixed',ch,Pt,sic,p.sigma2,rho_fixed,p.rate_threshold,p.harvest_cfg), solve_pack('rsma_opt',ch,Pt,sic,p.sigma2,rho_grid,p.rate_threshold,p.harvest_cfg)};
+        nopt = sols{3}; ropt = sols{6};
+        if isfield(nopt,'rho_opt'), noma_rho_sel(imc)=nopt.rho_opt; end
+        if isfield(nopt,'rho_feasible_max'), noma_rho_max(imc)=nopt.rho_feasible_max; end
+        if isfield(nopt,'hit_feasible_bound'), noma_hit(imc)=nopt.hit_feasible_bound; end
+        if isfield(nopt,'infeasible_skip_frac'), noma_skip(imc)=nopt.infeasible_skip_frac; end
+        if isfield(ropt,'rho_opt'), rsma_zeta_sel(imc)=ropt.rho_opt; end
+        if isfield(ropt,'zeta_feasible_max'), rsma_zeta_max(imc)=ropt.zeta_feasible_max; end
+        if isfield(ropt,'hit_feasible_bound'), rsma_hit(imc)=ropt.hit_feasible_bound; end
+        if isfield(ropt,'infeasible_skip_frac'), rsma_skip(imc)=ropt.infeasible_skip_frac; end
+        if isfield(ropt,'alpha_c'), rsma_ac(imc)=ropt.alpha_c; end
+        if isfield(ropt,'alpha_1'), rsma_a1(imc)=ropt.alpha_1; end
+        if isfield(ropt,'alpha_2'), rsma_a2(imc)=ropt.alpha_2; end
+        if isfield(ropt,'mu'), rsma_mu(imc)=ropt.mu; end
+        if isfield(ropt,'Pc'), rsma_pc(imc)=ropt.Pc; end
+        if isfield(ropt,'P1'), rsma_p1(imc)=ropt.P1; end
+        if isfield(ropt,'P2'), rsma_p2(imc)=ropt.P2; end
+        if isfield(ropt,'is_all_common'), rsma_all_common(imc)=ropt.is_all_common; end
         for is=1:ns
             s=sols{is}; tmp(imc,is,:)=[s.R1 s.R2 s.sum_rate s.max_min_rate s.jain_fairness s.energy_efficiency s.rho_used s.rho_opt s.ber_tag s.ber_user1 s.ber_user2 s.outage_flag];
         end
@@ -143,6 +166,20 @@ for ix=1:nx
     res.R1(ix,:)=avg(:,1)'; res.R2(ix,:)=avg(:,2)'; res.sum_rate(ix,:)=avg(:,3)'; res.max_min_rate(ix,:)=avg(:,4)';
     res.jain_fairness(ix,:)=avg(:,5)'; res.energy_efficiency(ix,:)=avg(:,6)'; res.rho_used(ix,:)=avg(:,7)'; res.rho_opt(ix,:)=avg(:,8)';
     res.ber_tag(ix,:)=avg(:,9)'; res.ber_user1(ix,:)=avg(:,10)'; res.ber_user2(ix,:)=avg(:,11)'; res.outage_flag(ix,:)=avg(:,12)';
+    res.noma_opt_avg_rho(ix,1)=mean(noma_rho_sel,'omitnan');
+    res.noma_opt_hit_feasible_frac(ix,1)=mean(noma_hit,'omitnan');
+    res.noma_opt_skip_infeasible_frac(ix,1)=mean(noma_skip,'omitnan');
+    res.rsma_opt_avg_zeta(ix,1)=mean(rsma_zeta_sel,'omitnan');
+    res.rsma_opt_hit_feasible_frac(ix,1)=mean(rsma_hit,'omitnan');
+    res.rsma_opt_skip_infeasible_frac(ix,1)=mean(rsma_skip,'omitnan');
+    res.rsma_opt_all_common_frac(ix,1)=mean(rsma_all_common,'omitnan');
+    res.rsma_opt_alpha_c(ix,1)=mean(rsma_ac,'omitnan');
+    res.rsma_opt_alpha_1(ix,1)=mean(rsma_a1,'omitnan');
+    res.rsma_opt_alpha_2(ix,1)=mean(rsma_a2,'omitnan');
+    res.rsma_opt_mu(ix,1)=mean(rsma_mu,'omitnan');
+    res.rsma_opt_Pc(ix,1)=mean(rsma_pc,'omitnan');
+    res.rsma_opt_P1(ix,1)=mean(rsma_p1,'omitnan');
+    res.rsma_opt_P2(ix,1)=mean(rsma_p2,'omitnan');
     fprintf('[sweep:%s] x %d/%d done | elapsed=%.2fs\n', kind, ix, nx, toc(t_ix));
 end
 res.x_values=xvec; res.scheme_names=p.scheme_names; res.sweep_name=kind; res.x_label=xlab;
@@ -153,15 +190,19 @@ nx=numel(p.tag_count_vec); ns=numel(p.scheme_names);
 res.x_values=p.tag_count_vec; res.scheme_names=p.scheme_names; res.sweep_name='tags'; res.x_label='Tag count';
 fns={'R1','R2','sum_rate','max_min_rate','jain_fairness','energy_efficiency','rho_used','rho_opt','ber_tag','ber_user1','ber_user2','outage_flag'};
 for k=1:numel(fns), res.(fns{k})=nan(nx,ns); end
+fprintf('[sweep:tags] WARNING: tags sweep is TODO/placeholder and currently returns NaN metrics.\n');
 end
 
 function lines = summary_local(mode_name,p,res_power)
 lines={sprintf('mode: %s',mode_name),sprintf('numMC: %d',p.numMC),sprintf('Pt_dBm_vec: %s',mat2str(p.Pt_dBm_vec)),sprintf('sic_err_vec: %s',mat2str(p.sic_err_vec)),sprintf('csi_err_vec: %s',mat2str(p.csi_err_vec)),sprintf('blk_loss_dB_vec: %s',mat2str(p.blk_loss_dB_vec)),'generated figure groups: A,B,C,D,E,F,G,H'};
 idx40=find(p.Pt_dBm_vec==40,1); if isempty(idx40), idx40=numel(p.Pt_dBm_vec); end
 row=res_power.max_min_rate(idx40,:); [~,best_idx]=max(row);
-lines{end+1}=sprintf('At Pt = %.1f dBm, %s achieved the best max-min rate.',p.Pt_dBm_vec(idx40),p.scheme_names{best_idx});
-lines{end+1}='Optimized rho outperformed fixed rho consistently in RSMA-AmBC.';
-lines{end+1}='Pure RSMA outperformed Pure NOMA in fairness under the tested settings.';
+lines{end+1}=sprintf('At Pt = %.1f dBm, best max-min scheme: %s.',p.Pt_dBm_vec(idx40),p.scheme_names{best_idx});
+if isfield(res_power,'rsma_opt_all_common_frac')
+    lines{end+1}=sprintf('RSMA-opt all-common fraction (at reference Pt index): %.3f', res_power.rsma_opt_all_common_frac(idx40));
+    lines{end+1}=sprintf('RSMA-opt avg alpha_c/alpha_1/alpha_2: %.3f / %.3f / %.3f', ...
+        res_power.rsma_opt_alpha_c(idx40), res_power.rsma_opt_alpha_1(idx40), res_power.rsma_opt_alpha_2(idx40));
+end
 end
 
 function print_scheme_metrics_local(p, res_power)
@@ -172,7 +213,32 @@ for is = 1:numel(p.scheme_names)
     fprintf('%s | sum-rate=%.4f | max-min=%.4f | rho_used=%.3f\n', ...
         p.scheme_names{is}, res_power.sum_rate(idx,is), res_power.max_min_rate(idx,is), res_power.rho_used(idx,is));
 end
+if isfield(res_power,'noma_opt_avg_rho')
+    fprintf('[opt-stats] NOMA-opt avg rho=%.3f | hit-feasible=%.3f | skipped-infeasible=%.3f\n', ...
+        res_power.noma_opt_avg_rho(idx), res_power.noma_opt_hit_feasible_frac(idx), res_power.noma_opt_skip_infeasible_frac(idx));
+end
+if isfield(res_power,'rsma_opt_avg_zeta')
+    fprintf('[opt-stats] RSMA-opt avg zeta=%.3f | hit-feasible=%.3f | skipped-infeasible=%.3f | all-common=%.3f\n', ...
+        res_power.rsma_opt_avg_zeta(idx), res_power.rsma_opt_hit_feasible_frac(idx), res_power.rsma_opt_skip_infeasible_frac(idx), res_power.rsma_opt_all_common_frac(idx));
+    fprintf('[opt-stats] RSMA-opt avg alpha=(%.3f, %.3f, %.3f) | mu=%.3f | P=(%.4g, %.4g, %.4g)\n', ...
+        res_power.rsma_opt_alpha_c(idx), res_power.rsma_opt_alpha_1(idx), res_power.rsma_opt_alpha_2(idx), ...
+        res_power.rsma_opt_mu(idx), res_power.rsma_opt_Pc(idx), res_power.rsma_opt_P1(idx), res_power.rsma_opt_P2(idx));
+end
 fprintf('======================================\n\n');
 end
 
 function x=item(name,fig), x=struct('name',name,'fig',fig); end
+
+function res = local_empty_result(kind, scheme_names)
+res = struct();
+res.x_values = [];
+res.scheme_names = scheme_names;
+res.sweep_name = kind;
+res.x_label = '';
+fns={'R1','R2','sum_rate','max_min_rate','jain_fairness','energy_efficiency','rho_used','rho_opt','ber_tag','ber_user1','ber_user2','outage_flag'};
+for k=1:numel(fns), res.(fns{k}) = []; end
+end
+
+function v = local_get_or(s, k, d)
+if isfield(s, k), v = s.(k); else, v = d; end
+end

@@ -42,6 +42,8 @@ best.Pc = 0; best.P1 = 0; best.P2 = 0;
 best.zeta = zeta_fixed;
 best.mu = 0.5;
 best.R1 = 0; best.R2 = 0; best.Rc = 0; best.C1 = 0; best.C2 = 0;
+best.alpha_c = 0; best.alpha_1 = 0; best.alpha_2 = 0;
+best.all_common = false;
 for ac = alphas
     for a1 = alphas
         if ac + a1 > 1, continue; end
@@ -64,6 +66,11 @@ for ac = alphas
                 best.mu = mu;
                 best.R1 = R1; best.R2 = R2; best.Rc = rs.common_rate;
                 best.C1 = rs.C1; best.C2 = rs.C2;
+                sumP = max(rs.Pc + rs.P1 + rs.P2, eps);
+                best.alpha_c = rs.Pc / sumP;
+                best.alpha_1 = rs.P1 / sumP;
+                best.alpha_2 = rs.P2 / sumP;
+                best.all_common = local_is_all_common(Ps, rs.Pc, rs.P1, rs.P2);
             end
         end
     end
@@ -87,6 +94,8 @@ best.Pc = 0; best.P1 = 0; best.P2 = 0;
 best.zeta = 0;
 best.mu = 0.5;
 best.R1 = 0; best.R2 = 0; best.Rc = 0; best.C1 = 0; best.C2 = 0;
+best.alpha_c = 0; best.alpha_1 = 0; best.alpha_2 = 0;
+best.all_common = false;
 persistent rsma_opt_call_count;
 if isempty(rsma_opt_call_count), rsma_opt_call_count = 0; end
 rsma_opt_call_count = rsma_opt_call_count + 1;
@@ -118,13 +127,15 @@ for iz = 1:numel(zeta_grid)
     end
 end
 if do_log
-    sumP = max(best.Pc + best.P1 + best.P2, eps);
-    alpha_c = best.Pc / sumP; alpha_1 = best.P1 / sumP; alpha_2 = best.P2 / sumP;
-    is_all_common = (alpha_c > 1-1e-9) && (alpha_1 < 1e-9) && (alpha_2 < 1e-9);
+    alpha_c = best.alpha_c; alpha_1 = best.alpha_1; alpha_2 = best.alpha_2;
+    is_all_common = best.all_common;
     fprintf('[rsma_opt] best zeta=%.3f | max-min=%.4f | sum-rate=%.4f | mu=%.3f | Pc=%.4g | P1=%.4g | P2=%.4g\n', ...
         best.zeta, best.max_min_rate, best.sum_rate, best.mu, best.Pc, best.P1, best.P2);
     fprintf('          alpha_c=%.3f alpha_1=%.3f alpha_2=%.3f | all-common=%d\n', alpha_c, alpha_1, alpha_2, is_all_common);
 end
+best.zeta_feasible_max = zeta_max_feasible;
+best.infeasible_skip_frac = num_skipped / max(num_before, 1);
+best.hit_feasible_bound = abs(best.zeta - zeta_max_feasible) <= 1e-9;
 end
 
 function rho_max = local_rho_max_from_harvest(ch, Pt, h)
@@ -148,4 +159,14 @@ end
 
 function v = local_get_or(s, k, d)
 if isfield(s, k), v = s.(k); else, v = d; end
+end
+
+function tf = local_is_all_common(Ps, Pc, P1, P2)
+if Ps <= 0
+    tf = false;
+    return;
+end
+alpha_c = Pc / Ps;
+private_small = (P1 <= 0.025*Ps) && (P2 <= 0.025*Ps);
+tf = (alpha_c >= 0.95) && private_small;
 end

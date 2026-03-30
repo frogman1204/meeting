@@ -63,6 +63,9 @@ p.csi_err_vec = [0 0.2];
 p.blk_loss_dB_vec = [0 20];
 p.rho_plot_vec = [0 0.5 1.0];
 p.rho_grid = 0:0.2:1;
+p.enabled_sweeps = {'power','rho'};
+p.harvest_cfg.rsma_p_step = 0.2;
+p.harvest_cfg.mu_grid = [0.2 0.5 0.8];
 end
 
 function h = local_harvest_cfg()
@@ -77,6 +80,8 @@ h.P_cir = 0.0; % optional circuit power term
 % Optional RSMA debug guard (default disabled / non-restrictive).
 h.max_common_frac = 1.0;   % 1.0 keeps all-common allowed
 h.min_private_frac = 0.0;  % 0.0 keeps no private-min guard
+h.rsma_p_step = 0.1;
+h.mu_grid = 0.1:0.1:0.9;
 end
 
 function [names, keys] = local_scheme_info()

@@ -29,6 +29,7 @@ Lightweight debug mode:
 ```matlab
 run('debug')
 ```
+(`debug` mode runs reduced sweeps and coarse grids for fast validation.)
 
 ## Output folders
 - Full outputs (figures/mat/summary/csv): `out/<mode>_run_yyyymmdd_HHMMSS/`
@@ -37,6 +38,9 @@ run('debug')
 ## Notes
 - Optimized AmBC paths include a harvesting-feasibility constraint using `p.harvest_cfg`
   (see `get_pack.m`).
+- Rho sweep interpretation: optimized schemes are evaluated with `rho <= x` (plus feasibility),
+  while fixed schemes are evaluated at `rho = x`.
+- Tags sweep is currently a TODO placeholder and logs a warning at runtime.
 
 ## File change summary
 - Newly added in this update:
