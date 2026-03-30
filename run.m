@@ -59,30 +59,29 @@ tables = {
  struct('name','tbl_sic.csv','table',calc_pack('build_table_from_results',res_sic))};
 
 figs = {};
-figs{end+1}=item('A_maxmin_vs_power',plot_pack('metric',res_power.x_values,res_power.max_min_rate,params.scheme_names,'Transmit power (dBm)','Max-min rate (bit/s/Hz)','Max-min vs transmit power'));
-figs{end+1}=item('A_sumrate_vs_power',plot_pack('metric',res_power.x_values,res_power.sum_rate,params.scheme_names,'Transmit power (dBm)','Sum-rate (bit/s/Hz)','Sum-rate vs transmit power'));
-figs{end+1}=item('A_fairness_vs_power',plot_pack('metric',res_power.x_values,res_power.jain_fairness,params.scheme_names,'Transmit power (dBm)','Jain fairness','Fairness vs transmit power'));
-figs{end+1}=item('A_ee_vs_power',plot_pack('metric',res_power.x_values,res_power.energy_efficiency,params.scheme_names,'Transmit power (dBm)','Energy efficiency','EE vs transmit power'));
-figs{end+1}=item('B_noma_sumrate',plot_pack('metric',res_power.x_values,res_power.sum_rate(:,1:3),params.scheme_names(1:3),'Transmit power (dBm)','Sum-rate','NOMA internal comparison'));
-figs{end+1}=item('C_rsma_sumrate',plot_pack('metric',res_power.x_values,res_power.sum_rate(:,4:6),params.scheme_names(4:6),'Transmit power (dBm)','Sum-rate','RSMA internal comparison'));
-figs{end+1}=item('D_representative_sumrate',plot_pack('metric',res_power.x_values,res_power.sum_rate(:,[1 3 4 6]),params.scheme_names([1 3 4 6]),'Transmit power (dBm)','Sum-rate','Representative comparison'));
-figs{end+1}=item('E_sumrate_vs_csi',plot_pack('metric',res_csi.x_values,res_csi.sum_rate,params.scheme_names,'CSI error','Sum-rate','Robustness vs CSI error'));
-figs{end+1}=item('E_maxmin_vs_csi',plot_pack('metric',res_csi.x_values,res_csi.max_min_rate,params.scheme_names,'CSI error','Max-min rate','Robustness max-min vs CSI error'));
-figs{end+1}=item('E_sumrate_vs_blockage',plot_pack('metric',res_blk.x_values,res_blk.sum_rate,params.scheme_names,'Blockage (dB)','Sum-rate','Robustness vs blockage'));
-figs{end+1}=item('E_maxmin_vs_blockage',plot_pack('metric',res_blk.x_values,res_blk.max_min_rate,params.scheme_names,'Blockage (dB)','Max-min rate','Robustness max-min vs blockage'));
-figs{end+1}=item('E_sumrate_vs_sic',plot_pack('metric',res_sic.x_values,res_sic.sum_rate,params.scheme_names,'SIC error','Sum-rate','Robustness vs SIC error'));
-figs{end+1}=item('E_maxmin_vs_sic',plot_pack('metric',res_sic.x_values,res_sic.max_min_rate,params.scheme_names,'SIC error','Max-min rate','Robustness max-min vs SIC error'));
-figs{end+1}=item('F_maxmin_vs_rho',plot_pack('metric',res_rho.x_values,res_rho.max_min_rate,params.scheme_names,'rho','Max-min rate','Max-min vs rho'));
-figs{end+1}=item('F_sumrate_vs_rho',plot_pack('metric',res_rho.x_values,res_rho.sum_rate,params.scheme_names,'rho','Sum-rate','Sum-rate vs rho'));
-figs{end+1}=item('F_fairness_vs_rho',plot_pack('metric',res_rho.x_values,res_rho.jain_fairness,params.scheme_names,'rho','Jain fairness','Fairness vs rho'));
-figs{end+1}=item('F_ee_vs_rho',plot_pack('metric',res_rho.x_values,res_rho.energy_efficiency,params.scheme_names,'rho','Energy efficiency','EE vs rho'));
-[g1a,g1r]=calc_pack('gain',res_power.sum_rate(:,2),res_power.sum_rate(:,3));
-[g2a,g2r]=calc_pack('gain',res_power.sum_rate(:,5),res_power.sum_rate(:,6));
-figs{end+1}=item('G_gain_noma',plot_pack('gain',res_power.x_values,g1a,g1r,'Transmit power (dBm)','NOMA-AmBC (Fixed rho)','NOMA-AmBC (Optimized rho)'));
-figs{end+1}=item('G_gain_rsma',plot_pack('gain',res_power.x_values,g2a,g2r,'Transmit power (dBm)','RSMA-AmBC (Fixed rho)','RSMA-AmBC (Optimized rho)'));
-figs{end+1}=item('H_ber_vs_power',plot_pack('ber',res_power.x_values,res_power.ber_user1,params.scheme_names,'Transmit power (dBm)','BER vs power (placeholder)'));
-figs{end+1}=item('H_ber_vs_rho',plot_pack('ber',res_rho.x_values,res_rho.ber_user1,params.scheme_names,'rho','BER vs rho (placeholder)'));
-figs{end+1}=item('H_ber_vs_csi',plot_pack('ber',res_csi.x_values,res_csi.ber_user1,params.scheme_names,'CSI error','BER vs CSI error (placeholder)'));
+pcfg = local_get_or(params, 'plot_cfg', struct());
+if local_get_or(pcfg, 'plot_power_mm', true)
+    figs{end+1}=item('power_maxmin',plot_pack('metric',res_power.x_values,res_power.max_min_rate,params.scheme_names,'Transmit power (dBm)','Max-min rate (bit/s/Hz)','Power vs max-min rate'));
+end
+if local_get_or(pcfg, 'plot_power_sum', true)
+    figs{end+1}=item('power_sumrate',plot_pack('metric',res_power.x_values,res_power.sum_rate,params.scheme_names,'Transmit power (dBm)','Sum-rate (bit/s/Hz)','Power vs sum-rate'));
+end
+if local_get_or(pcfg, 'plot_blockage_mm', true)
+    figs{end+1}=item('blockage_maxmin',plot_pack('metric',res_blk.x_values,res_blk.max_min_rate,params.scheme_names,'Blockage (dB)','Max-min rate','Blockage vs max-min rate'));
+end
+if local_get_or(pcfg, 'plot_csi', true)
+    figs{end+1}=item('csi_sumrate',plot_pack('metric',res_csi.x_values,res_csi.sum_rate,params.scheme_names,'CSI error','Sum-rate','CSI sweep'));
+end
+if local_get_or(pcfg, 'plot_rho', true)
+    figs{end+1}=item('rho_maxmin',plot_pack('metric',res_rho.x_values,res_rho.max_min_rate,params.scheme_names,'rho','Max-min rate','rho sweep'));
+end
+if local_get_or(pcfg, 'plot_sic', true)
+    figs{end+1}=item('sic_sumrate',plot_pack('metric',res_sic.x_values,res_sic.sum_rate,params.scheme_names,'SIC error','Sum-rate','SIC sweep'));
+end
+if local_get_or(pcfg, 'plot_rsma_diag', true) && isfield(res_power,'rsma_opt_all_common_frac')
+    diag_mat = repmat(res_power.rsma_opt_all_common_frac, 1, 1);
+    figs{end+1}=item('rsma_allcommon_diag',plot_pack('metric',res_power.x_values,diag_mat,{'RSMA-opt all-common fraction'},'Transmit power (dBm)','Fraction','RSMA-opt all-common diagnostic'));
+end
 
 summary = summary_local(mode_name, params, res_power);
 print_scheme_metrics_local(params, res_power);
@@ -194,7 +193,8 @@ fprintf('[sweep:tags] WARNING: tags sweep is TODO/placeholder and currently retu
 end
 
 function lines = summary_local(mode_name,p,res_power)
-lines={sprintf('mode: %s',mode_name),sprintf('numMC: %d',p.numMC),sprintf('Pt_dBm_vec: %s',mat2str(p.Pt_dBm_vec)),sprintf('sic_err_vec: %s',mat2str(p.sic_err_vec)),sprintf('csi_err_vec: %s',mat2str(p.csi_err_vec)),sprintf('blk_loss_dB_vec: %s',mat2str(p.blk_loss_dB_vec)),'generated figure groups: A,B,C,D,E,F,G,H'};
+pcfg = local_get_or(p, 'plot_cfg', struct());
+lines={sprintf('mode: %s',mode_name),sprintf('numMC: %d',p.numMC),sprintf('Pt_dBm_vec: %s',mat2str(p.Pt_dBm_vec)),sprintf('sic_err_vec: %s',mat2str(p.sic_err_vec)),sprintf('csi_err_vec: %s',mat2str(p.csi_err_vec)),sprintf('blk_loss_dB_vec: %s',mat2str(p.blk_loss_dB_vec)),sprintf('plot switches: %s', jsonencode(pcfg))};
 idx40=find(p.Pt_dBm_vec==40,1); if isempty(idx40), idx40=numel(p.Pt_dBm_vec); end
 row=res_power.max_min_rate(idx40,:); [~,best_idx]=max(row);
 lines{end+1}=sprintf('At Pt = %.1f dBm, best max-min scheme: %s.',p.Pt_dBm_vec(idx40),p.scheme_names{best_idx});

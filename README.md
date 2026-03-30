@@ -42,6 +42,8 @@ validate_guarded
 ## Notes
 - Optimized AmBC paths include a harvesting-feasibility constraint using `p.harvest_cfg`
   (see `get_pack.m`).
+- Figure generation is controlled by `p.plot_cfg` switches. Default keeps only key inspection figures
+  (power max-min/sum, blockage max-min, CSI, rho, SIC, RSMA all-common diagnostic).
 - Rho sweep interpretation: optimized schemes are evaluated with `rho <= x` (plus feasibility),
   while fixed schemes are evaluated at `rho = x`.
 - Tags sweep is currently a TODO placeholder and logs a warning at runtime.

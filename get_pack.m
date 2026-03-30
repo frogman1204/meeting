@@ -33,6 +33,7 @@ p.Pt_dBm_default = 40;
 p.rate_threshold = 0.5;
 p.tag_count_vec = [1 2 3 4];
 p.harvest_cfg = local_harvest_cfg();
+p.plot_cfg = local_plot_cfg();
 [p.scheme_names, p.scheme_keys] = local_scheme_info();
 end
 
@@ -51,6 +52,7 @@ p.Pt_dBm_default = 40;
 p.rate_threshold = 0.5;
 p.tag_count_vec = [1 2 3 4 5 6];
 p.harvest_cfg = local_harvest_cfg();
+p.plot_cfg = local_plot_cfg();
 [p.scheme_names, p.scheme_keys] = local_scheme_info();
 end
 
@@ -66,6 +68,7 @@ p.rho_grid = 0:0.2:1;
 p.enabled_sweeps = {'power','rho'};
 p.harvest_cfg.rsma_p_step = 0.2;
 p.harvest_cfg.mu_grid = [0.2 0.5 0.8];
+p.plot_cfg = local_plot_cfg();
 end
 
 function h = local_harvest_cfg()
@@ -82,6 +85,18 @@ h.max_common_frac = 1.0;   % 1.0 keeps all-common allowed
 h.min_private_frac = 0.0;  % 0.0 keeps no private-min guard
 h.rsma_p_step = 0.1;
 h.mu_grid = 0.1:0.1:0.9;
+end
+
+function c = local_plot_cfg()
+% Keep only key diagnostic figures by default.
+c.plot_power_mm = true;
+c.plot_power_sum = true;
+c.plot_blockage_mm = true;
+c.plot_csi = true;
+c.plot_rho = true;
+c.plot_sic = true;
+c.plot_rsma_diag = true;
+c.plot_tags = false;
 end
 
 function [names, keys] = local_scheme_info()
