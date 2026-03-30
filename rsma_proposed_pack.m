@@ -13,9 +13,9 @@ end
 
 switch lower(mode)
     case 'pure'
-        met = local_rsma_eval(ch, Pt, sic_err, sigma2, 0, rate_threshold, NaN);
+        met = local_rsma_opt(ch, Pt, sic_err, sigma2, 0, rate_threshold, harvest_cfg);
     case 'fixed'
-        met = local_rsma_eval(ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, NaN);
+        met = local_rsma_opt(ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, harvest_cfg);
     case 'opt'
         met = local_rsma_opt(ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, harvest_cfg);
     otherwise

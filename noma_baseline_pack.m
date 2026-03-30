@@ -10,27 +10,33 @@ if nargin >= 8
 else
     harvest_cfg = struct();
 end
+if nargin >= 9
+    xi_grid = varargin{2};
+else
+    xi_grid = 0.05:0.05:0.95;
+end
 
 switch lower(mode)
     case 'pure'
-        met = local_noma_eval(ch, Pt, sic_err, sigma2, 0, rate_threshold, NaN);
+        met = local_noma_optimize(ch, Pt, sic_err, sigma2, 0, xi_grid, rate_threshold, harvest_cfg, false);
     case 'fixed'
-        met = local_noma_eval(ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, NaN);
+        met = local_noma_optimize(ch, Pt, sic_err, sigma2, rho_arg, xi_grid, rate_threshold, harvest_cfg, false);
     case 'opt'
-        met = local_noma_opt(ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, harvest_cfg);
+        met = local_noma_optimize(ch, Pt, sic_err, sigma2, rho_arg, xi_grid, rate_threshold, harvest_cfg, true);
     otherwise
         error('Unknown NOMA baseline mode: %s', mode);
 end
 
 end
 
-function met = local_noma_eval(ch, Pt, sic_err, sigma2, rho, rate_threshold, rho_opt)
-[R1, R2] = core('rates', ch, Pt, sic_err, sigma2, rho);
+function met = local_noma_eval(ch, Pt, sic_err, sigma2, rho, xi, rate_threshold, rho_opt)
+[R1, R2] = core('rates', ch, Pt, sic_err, sigma2, rho, xi);
 total_power = Pt + 0.1 + 0.05*rho;
 met = calc_pack('compute_metrics_scheme', R1, R2, total_power, rho, rho_opt, rate_threshold);
+met.xi_used = xi;
 end
 
-function met = local_noma_opt(ch, Pt, sic_err, sigma2, rho_grid, rate_threshold, harvest_cfg)
+function met = local_noma_optimize(ch, Pt, sic_err, sigma2, rho_arg, xi_grid, rate_threshold, harvest_cfg, allow_rho_opt)
 persistent noma_opt_call_count;
 if isempty(noma_opt_call_count), noma_opt_call_count = 0; end
 noma_opt_call_count = noma_opt_call_count + 1;
@@ -38,7 +44,13 @@ do_log = (noma_opt_call_count <= 3) || (mod(noma_opt_call_count, 200) == 0);
 
 best_min = -inf;
 best_sum = -inf;
+if allow_rho_opt
+    rho_grid = rho_arg;
+else
+    rho_grid = rho_arg(1);
+end
 best_rho = rho_grid(1);
+best_xi = xi_grid(1);
 best_met = [];
 tick = max(1, floor(numel(rho_grid)/5));
 rho_max_feasible = local_rho_max_from_harvest(ch, Pt, harvest_cfg);
@@ -59,7 +71,9 @@ end
 
 for ir = 1:numel(rho_grid)
     rho = rho_grid(ir);
-    tmp = local_noma_eval(ch, Pt, sic_err, sigma2, rho, rate_threshold, rho);
+    for ix = 1:numel(xi_grid)
+        xi = xi_grid(ix);
+        tmp = local_noma_eval(ch, Pt, sic_err, sigma2, rho, xi, rate_threshold, rho);
     if do_log && (ir == 1 || ir == numel(rho_grid) || mod(ir, tick) == 0)
         fprintf('  [noma_opt] rho idx %d/%d (rho=%.3f)\n', ir, numel(rho_grid), rho);
     end
@@ -68,18 +82,21 @@ for ir = 1:numel(rho_grid)
         best_min = tmp.max_min_rate;
         best_sum = tmp.sum_rate;
         best_rho = rho;
+        best_xi = xi;
         best_met = tmp;
+    end
     end
 end
 
 best_met.rho_opt = best_rho;
+best_met.xi_opt = best_xi;
 best_met.rho_feasible_max = rho_max_feasible;
 best_met.hit_feasible_bound = abs(best_rho - rho_max_feasible) <= 1e-9;
 best_met.infeasible_skip_frac = num_skipped / max(num_before, 1);
 met = best_met;
 if do_log
-    fprintf('[noma_opt] best rho=%.3f | max-min=%.4f | sum-rate=%.4f\n', ...
-        best_rho, met.max_min_rate, met.sum_rate);
+    fprintf('[noma_opt] best rho=%.3f | best xi=%.3f | max-min=%.4f | sum-rate=%.4f\n', ...
+        best_rho, best_xi, met.max_min_rate, met.sum_rate);
 end
 
 function rho_max = local_rho_max_from_harvest(ch, Pt, h)

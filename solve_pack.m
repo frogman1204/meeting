@@ -15,14 +15,19 @@ if nargin >= 8
 else
     harvest_cfg = struct();
 end
+if nargin >= 9
+    xi_grid = varargin{2};
+else
+    xi_grid = 0.05:0.05:0.95;
+end
 
 switch lower(mode)
     case 'pure_noma'
-        met = noma_baseline_pack('pure', ch, Pt, sic_err, sigma2, 0, rate_threshold, harvest_cfg);
+        met = noma_baseline_pack('pure', ch, Pt, sic_err, sigma2, 0, rate_threshold, harvest_cfg, xi_grid);
     case 'noma_fixed'
-        met = noma_baseline_pack('fixed', ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, harvest_cfg);
+        met = noma_baseline_pack('fixed', ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, harvest_cfg, xi_grid);
     case 'noma_opt'
-        met = noma_baseline_pack('opt', ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, harvest_cfg);
+        met = noma_baseline_pack('opt', ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, harvest_cfg, xi_grid);
     case 'pure_rsma'
         met = rsma_proposed_pack('pure', ch, Pt, sic_err, sigma2, 0, rate_threshold, harvest_cfg);
     case 'rsma_fixed'

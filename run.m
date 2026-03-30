@@ -134,12 +134,15 @@ for ix=1:nx
     rsma_zeta_sel = nan(p.numMC,1); rsma_zeta_max = nan(p.numMC,1); rsma_hit = nan(p.numMC,1); rsma_skip = nan(p.numMC,1);
     rsma_ac = nan(p.numMC,1); rsma_a1 = nan(p.numMC,1); rsma_a2 = nan(p.numMC,1); rsma_mu = nan(p.numMC,1);
     rsma_pc = nan(p.numMC,1); rsma_p1 = nan(p.numMC,1); rsma_p2 = nan(p.numMC,1); rsma_all_common = nan(p.numMC,1);
+    xi_used = nan(p.numMC,ns); mu_used = nan(p.numMC,ns);
+    pc_used = nan(p.numMC,ns); p1_used = nan(p.numMC,ns); p2_used = nan(p.numMC,ns);
+    all_common_used = nan(p.numMC,ns);
     for imc=1:p.numMC
         if imc == 1 || imc == p.numMC || mod(imc, tick_mc) == 0
             fprintf('  [sweep:%s x:%d/%d] MC %d/%d\n', kind, ix, nx, imc, p.numMC);
         end
         ch=apply_pack('generate_channels'); ch=apply_pack('apply_csi_error',ch,csi); ch=apply_pack('apply_blockage_effect',ch,blk);
-        sols={solve_pack('pure_noma',ch,Pt,sic,p.sigma2,0,p.rate_threshold,p.harvest_cfg), solve_pack('noma_fixed',ch,Pt,sic,p.sigma2,rho_fixed,p.rate_threshold,p.harvest_cfg), solve_pack('noma_opt',ch,Pt,sic,p.sigma2,rho_grid,p.rate_threshold,p.harvest_cfg), solve_pack('pure_rsma',ch,Pt,sic,p.sigma2,0,p.rate_threshold,p.harvest_cfg), solve_pack('rsma_fixed',ch,Pt,sic,p.sigma2,rho_fixed,p.rate_threshold,p.harvest_cfg), solve_pack('rsma_opt',ch,Pt,sic,p.sigma2,rho_grid,p.rate_threshold,p.harvest_cfg)};
+        sols={solve_pack('pure_noma',ch,Pt,sic,p.sigma2,0,p.rate_threshold,p.harvest_cfg,p.xi_grid), solve_pack('noma_fixed',ch,Pt,sic,p.sigma2,rho_fixed,p.rate_threshold,p.harvest_cfg,p.xi_grid), solve_pack('noma_opt',ch,Pt,sic,p.sigma2,rho_grid,p.rate_threshold,p.harvest_cfg,p.xi_grid), solve_pack('pure_rsma',ch,Pt,sic,p.sigma2,0,p.rate_threshold,p.harvest_cfg,p.xi_grid), solve_pack('rsma_fixed',ch,Pt,sic,p.sigma2,rho_fixed,p.rate_threshold,p.harvest_cfg,p.xi_grid), solve_pack('rsma_opt',ch,Pt,sic,p.sigma2,rho_grid,p.rate_threshold,p.harvest_cfg,p.xi_grid)};
         nopt = sols{3}; ropt = sols{6};
         if isfield(nopt,'rho_opt'), noma_rho_sel(imc)=nopt.rho_opt; end
         if isfield(nopt,'rho_feasible_max'), noma_rho_max(imc)=nopt.rho_feasible_max; end
@@ -157,6 +160,22 @@ for ix=1:nx
         if isfield(ropt,'P1'), rsma_p1(imc)=ropt.P1; end
         if isfield(ropt,'P2'), rsma_p2(imc)=ropt.P2; end
         if isfield(ropt,'is_all_common'), rsma_all_common(imc)=ropt.is_all_common; end
+        for is=1:ns
+            if isfield(sols{is},'xi_used')
+                xi_used(imc,is)=sols{is}.xi_used;
+            end
+            if isfield(sols{is},'mu')
+                mu_used(imc,is)=sols{is}.mu;
+            end
+            if isfield(sols{is},'Pc')
+                pc_used(imc,is)=sols{is}.Pc;
+                p1_used(imc,is)=sols{is}.P1;
+                p2_used(imc,is)=sols{is}.P2;
+            end
+            if isfield(sols{is},'is_all_common')
+                all_common_used(imc,is)=sols{is}.is_all_common;
+            end
+        end
         for is=1:ns
             s=sols{is}; tmp(imc,is,:)=[s.R1 s.R2 s.sum_rate s.max_min_rate s.jain_fairness s.energy_efficiency s.rho_used s.rho_opt s.ber_tag s.ber_user1 s.ber_user2 s.outage_flag];
         end
@@ -179,6 +198,12 @@ for ix=1:nx
     res.rsma_opt_Pc(ix,1)=mean(rsma_pc,'omitnan');
     res.rsma_opt_P1(ix,1)=mean(rsma_p1,'omitnan');
     res.rsma_opt_P2(ix,1)=mean(rsma_p2,'omitnan');
+    res.scheme_avg_xi(ix,:)=mean(xi_used,1,'omitnan');
+    res.scheme_avg_mu(ix,:)=mean(mu_used,1,'omitnan');
+    res.scheme_avg_Pc(ix,:)=mean(pc_used,1,'omitnan');
+    res.scheme_avg_P1(ix,:)=mean(p1_used,1,'omitnan');
+    res.scheme_avg_P2(ix,:)=mean(p2_used,1,'omitnan');
+    res.scheme_all_common_frac(ix,:)=mean(all_common_used,1,'omitnan');
     fprintf('[sweep:%s] x %d/%d done | elapsed=%.2fs\n', kind, ix, nx, toc(t_ix));
 end
 res.x_values=xvec; res.scheme_names=p.scheme_names; res.sweep_name=kind; res.x_label=xlab;
@@ -210,8 +235,19 @@ idx = find(p.Pt_dBm_vec == p.Pt_dBm_default, 1);
 if isempty(idx), idx = numel(p.Pt_dBm_vec); end
 fprintf('\n=== Scheme comparison at Pt=%.1f dBm ===\n', p.Pt_dBm_vec(idx));
 for is = 1:numel(p.scheme_names)
-    fprintf('%s | sum-rate=%.4f | max-min=%.4f | rho_used=%.3f\n', ...
+    base = sprintf('%s | sum-rate=%.4f | max-min=%.4f | rho=%.3f', ...
         p.scheme_names{is}, res_power.sum_rate(idx,is), res_power.max_min_rate(idx,is), res_power.rho_used(idx,is));
+    if isfield(res_power,'scheme_avg_xi') && ~isnan(res_power.scheme_avg_xi(idx,is))
+        base = sprintf('%s | xi=%.3f', base, res_power.scheme_avg_xi(idx,is));
+    end
+    if isfield(res_power,'scheme_avg_Pc') && ~isnan(res_power.scheme_avg_Pc(idx,is))
+        base = sprintf('%s | Pc=%.4g P1=%.4g P2=%.4g | mu=%.3f', ...
+            base, res_power.scheme_avg_Pc(idx,is), res_power.scheme_avg_P1(idx,is), res_power.scheme_avg_P2(idx,is), res_power.scheme_avg_mu(idx,is));
+    end
+    if isfield(res_power,'scheme_all_common_frac') && ~isnan(res_power.scheme_all_common_frac(idx,is))
+        base = sprintf('%s | all-common-frac=%.3f', base, res_power.scheme_all_common_frac(idx,is));
+    end
+    fprintf('%s\n', base);
 end
 if isfield(res_power,'noma_opt_avg_rho')
     fprintf('[opt-stats] NOMA-opt avg rho=%.3f | hit-feasible=%.3f | skipped-infeasible=%.3f\n', ...

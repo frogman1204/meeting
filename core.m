@@ -27,8 +27,11 @@ ch.gFR1 = (randn + 1i*randn)/sqrt(2);
 ch.gFR2 = (randn + 1i*randn)/sqrt(2);
 end
 
-function [R1, R2] = local_rates(ch, Pt, sic_err, sigma2, rho)
-xi = 0.3;
+function [R1, R2] = local_rates(ch, Pt, sic_err, sigma2, rho, xi)
+if nargin < 6
+    xi = 0.3;
+end
+xi = min(max(xi, 1e-3), 1-1e-3);
 g1 = abs(ch.hSR1)^2 + rho*abs(ch.hSF)^2*abs(ch.gFR1)^2;
 g2 = abs(ch.hSR2)^2 + rho*abs(ch.hSF)^2*abs(ch.gFR2)^2;
 
