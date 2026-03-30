@@ -37,12 +37,32 @@ rng(params.rng_seed);
 ts = datestr(now, 'yyyymmdd_HHMMSS');
 out_dir = fullfile('out', sprintf('%s_run_%s', mode_name, ts));
 
+fprintf('\n[run] mode=%s | numMC=%d | start=%s\n', mode_name, params.numMC, ts);
+
+sw = tic;
+fprintf('[run] sweep power: start\n');
 res_power = run_sweep_local('power', params);
+fprintf('[run] sweep power: done (%.2fs)\n', toc(sw));
+sw = tic;
+fprintf('[run] sweep csi: start\n');
 res_csi = run_sweep_local('csi', params);
+fprintf('[run] sweep csi: done (%.2fs)\n', toc(sw));
+sw = tic;
+fprintf('[run] sweep blockage: start\n');
 res_blk = run_sweep_local('blockage', params);
+fprintf('[run] sweep blockage: done (%.2fs)\n', toc(sw));
+sw = tic;
+fprintf('[run] sweep rho: start\n');
 res_rho = run_sweep_local('rho', params);
+fprintf('[run] sweep rho: done (%.2fs)\n', toc(sw));
+sw = tic;
+fprintf('[run] sweep sic: start\n');
 res_sic = run_sweep_local('sic', params);
+fprintf('[run] sweep sic: done (%.2fs)\n', toc(sw));
+sw = tic;
+fprintf('[run] sweep tags: start\n');
 res_tags = run_sweep_tags_local(params);
+fprintf('[run] sweep tags: done (%.2fs)\n', toc(sw));
 
 all_results = struct('power',res_power,'csi',res_csi,'blockage',res_blk,'rho',res_rho,'sic',res_sic,'tags',res_tags);
 tables = {
@@ -94,15 +114,22 @@ switch lower(kind)
 end
 ns=numel(p.scheme_names); nx=numel(xvec); fns={'R1','R2','sum_rate','max_min_rate','jain_fairness','energy_efficiency','rho_used','rho_opt','ber_tag','ber_user1','ber_user2','outage_flag'};
 for k=1:numel(fns), res.(fns{k})=nan(nx,ns); end
+fprintf('[sweep:%s] x_count=%d | numMC=%d\n', kind, nx, p.numMC);
+tick_mc = max(1, floor(p.numMC/10));
 for ix=1:nx
+    t_ix = tic;
     Pt=10^((p.Pt_dBm_default-30)/10); sic=p.sic_err_vec(1); csi=p.csi_err_vec(1); blk=p.blk_loss_dB_vec(1); rho_fixed=p.rho_fixed; rho_grid=p.rho_grid;
     if strcmp(kind,'power'), Pt=10^((xvec(ix)-30)/10); end
     if strcmp(kind,'csi'), csi=xvec(ix); end
     if strcmp(kind,'blockage'), blk=xvec(ix); end
     if strcmp(kind,'sic'), sic=xvec(ix); end
     if strcmp(kind,'rho'), rho_fixed=xvec(ix); rho_grid=p.rho_grid(p.rho_grid<=xvec(ix)); if isempty(rho_grid), rho_grid=xvec(ix); end, end
+    fprintf('[sweep:%s] x %d/%d | value=%.4g\n', kind, ix, nx, xvec(ix));
     tmp=zeros(p.numMC,ns,12);
     for imc=1:p.numMC
+        if imc == 1 || imc == p.numMC || mod(imc, tick_mc) == 0
+            fprintf('  [sweep:%s x:%d/%d] MC %d/%d\n', kind, ix, nx, imc, p.numMC);
+        end
         ch=apply_pack('generate_channels'); ch=apply_pack('apply_csi_error',ch,csi); ch=apply_pack('apply_blockage_effect',ch,blk);
         sols={solve_pack('pure_noma',ch,Pt,sic,p.sigma2,0,p.rate_threshold), solve_pack('noma_fixed',ch,Pt,sic,p.sigma2,rho_fixed,p.rate_threshold), solve_pack('noma_opt',ch,Pt,sic,p.sigma2,rho_grid,p.rate_threshold), solve_pack('pure_rsma',ch,Pt,sic,p.sigma2,0,p.rate_threshold), solve_pack('rsma_fixed',ch,Pt,sic,p.sigma2,rho_fixed,p.rate_threshold), solve_pack('rsma_opt',ch,Pt,sic,p.sigma2,rho_grid,p.rate_threshold)};
         for is=1:ns
@@ -113,6 +140,7 @@ for ix=1:nx
     res.R1(ix,:)=avg(:,1)'; res.R2(ix,:)=avg(:,2)'; res.sum_rate(ix,:)=avg(:,3)'; res.max_min_rate(ix,:)=avg(:,4)';
     res.jain_fairness(ix,:)=avg(:,5)'; res.energy_efficiency(ix,:)=avg(:,6)'; res.rho_used(ix,:)=avg(:,7)'; res.rho_opt(ix,:)=avg(:,8)';
     res.ber_tag(ix,:)=avg(:,9)'; res.ber_user1(ix,:)=avg(:,10)'; res.ber_user2(ix,:)=avg(:,11)'; res.outage_flag(ix,:)=avg(:,12)';
+    fprintf('[sweep:%s] x %d/%d done | elapsed=%.2fs\n', kind, ix, nx, toc(t_ix));
 end
 res.x_values=xvec; res.scheme_names=p.scheme_names; res.sweep_name=kind; res.x_label=xlab;
 end

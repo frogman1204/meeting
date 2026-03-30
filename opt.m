@@ -37,7 +37,6 @@ best.Pc = 0; best.P1 = 0; best.P2 = 0;
 best.zeta = zeta_fixed;
 best.mu = 0.5;
 best.R1 = 0; best.R2 = 0; best.Rc = 0; best.C1 = 0; best.C2 = 0;
-
 for ac = alphas
     for a1 = alphas
         if ac + a1 > 1, continue; end
@@ -78,14 +77,30 @@ best.Pc = 0; best.P1 = 0; best.P2 = 0;
 best.zeta = 0;
 best.mu = 0.5;
 best.R1 = 0; best.R2 = 0; best.Rc = 0; best.C1 = 0; best.C2 = 0;
+persistent rsma_opt_call_count;
+if isempty(rsma_opt_call_count), rsma_opt_call_count = 0; end
+rsma_opt_call_count = rsma_opt_call_count + 1;
+do_log = (rsma_opt_call_count <= 3) || (mod(rsma_opt_call_count, 100) == 0);
+tick = max(1, floor(numel(zeta_grid)/5));
+if do_log
+    fprintf('[rsma_opt] call=%d | zeta candidates=%d | p_step=%.3f | mu candidates=%d\n', ...
+        rsma_opt_call_count, numel(zeta_grid), p_step, numel(mu_grid));
+end
 
 for iz = 1:numel(zeta_grid)
     zeta = zeta_grid(iz);
+    if do_log && (iz == 1 || iz == numel(zeta_grid) || mod(iz, tick) == 0)
+        fprintf('  [rsma_opt] zeta idx %d/%d (zeta=%.3f)\n', iz, numel(zeta_grid), zeta);
+    end
     tmp = local_rsma_power(ch, Ps, sic_err, sigma2, zeta, p_step, mu_grid);
     if (tmp.max_min_rate > best.max_min_rate + 1e-12) || ...
        (abs(tmp.max_min_rate - best.max_min_rate) <= 1e-12 && tmp.sum_rate > best.sum_rate)
         best = tmp;
         best.zeta = zeta;
     end
+end
+if do_log
+    fprintf('[rsma_opt] best zeta=%.3f | max-min=%.4f | sum-rate=%.4f | mu=%.3f | Pc=%.4g | P1=%.4g | P2=%.4g\n', ...
+        best.zeta, best.max_min_rate, best.sum_rate, best.mu, best.Pc, best.P1, best.P2);
 end
 end

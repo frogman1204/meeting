@@ -43,4 +43,17 @@ mu_grid = 0.1:0.1:0.9; % allow weaker user (user2) favoring split
 best = opt('rsma_power_zeta', ch, Pt, sic_err, sigma2, rho_grid, p_step, mu_grid);
 rsma_cfg = struct('Pc', best.Pc, 'P1', best.P1, 'P2', best.P2, 'mu', best.mu);
 met = local_rsma_eval(ch, Pt, sic_err, sigma2, best.zeta, rate_threshold, best.zeta, rsma_cfg);
+
+sumP = max(best.Pc + best.P1 + best.P2, eps);
+alpha_c = best.Pc / sumP;
+alpha_1 = best.P1 / sumP;
+alpha_2 = best.P2 / sumP;
+persistent rsma_pack_call_count;
+if isempty(rsma_pack_call_count), rsma_pack_call_count = 0; end
+rsma_pack_call_count = rsma_pack_call_count + 1;
+if rsma_pack_call_count <= 3 || mod(rsma_pack_call_count, 100) == 0
+    fprintf(['[rsma_opt_pack] call=%d | zeta=%.3f | alpha_c=%.3f alpha_1=%.3f alpha_2=%.3f | ' ...
+             'mu=%.3f | max-min=%.4f | sum-rate=%.4f\n'], ...
+        rsma_pack_call_count, best.zeta, alpha_c, alpha_1, alpha_2, best.mu, met.max_min_rate, met.sum_rate);
+end
 end
