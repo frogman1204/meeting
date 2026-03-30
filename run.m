@@ -70,13 +70,13 @@ if local_get_or(pcfg, 'plot_blockage_mm', true)
     figs{end+1}=item('blockage_maxmin',plot_pack('metric',res_blk.x_values,res_blk.max_min_rate,params.scheme_names,'Blockage (dB)','Max-min rate','Blockage vs max-min rate'));
 end
 if local_get_or(pcfg, 'plot_csi', true)
-    figs{end+1}=item('csi_sumrate',plot_pack('metric',res_csi.x_values,res_csi.sum_rate,params.scheme_names,'CSI error','Sum-rate','CSI sweep'));
+    figs{end+1}=item('csi_maxmin',plot_pack('metric',res_csi.x_values,res_csi.max_min_rate,params.scheme_names,'CSI error','Max-min rate','CSI sweep'));
 end
 if local_get_or(pcfg, 'plot_rho', true)
     figs{end+1}=item('rho_maxmin',plot_pack('metric',res_rho.x_values,res_rho.max_min_rate,params.scheme_names,'rho','Max-min rate','rho sweep'));
 end
 if local_get_or(pcfg, 'plot_sic', true)
-    figs{end+1}=item('sic_sumrate',plot_pack('metric',res_sic.x_values,res_sic.sum_rate,params.scheme_names,'SIC error','Sum-rate','SIC sweep'));
+    figs{end+1}=item('sic_maxmin',plot_pack('metric',res_sic.x_values,res_sic.max_min_rate,params.scheme_names,'SIC error','Max-min rate','SIC sweep'));
 end
 if local_get_or(pcfg, 'plot_rsma_diag', true) && isfield(res_power,'rsma_opt_all_common_frac')
     diag_mat = repmat(res_power.rsma_opt_all_common_frac, 1, 1);
