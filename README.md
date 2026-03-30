@@ -30,6 +30,10 @@ Lightweight debug mode:
 run('debug')
 ```
 (`debug` mode runs reduced sweeps and coarse grids for fast validation.)
+Guarded vs unguarded comparison helper:
+```matlab
+validate_guarded
+```
 
 ## Output folders
 - Full outputs (figures/mat/summary/csv): `out/<mode>_run_yyyymmdd_HHMMSS/`
