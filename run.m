@@ -169,8 +169,8 @@ idx = find(p.Pt_dBm_vec == p.Pt_dBm_default, 1);
 if isempty(idx), idx = numel(p.Pt_dBm_vec); end
 fprintf('\n=== Scheme comparison at Pt=%.1f dBm ===\n', p.Pt_dBm_vec(idx));
 for is = 1:numel(p.scheme_names)
-    fprintf('%s | sum-rate=%.4f | max-min=%.4f\n', ...
-        p.scheme_names{is}, res_power.sum_rate(idx,is), res_power.max_min_rate(idx,is));
+    fprintf('%s | sum-rate=%.4f | max-min=%.4f | rho_used=%.3f\n', ...
+        p.scheme_names{is}, res_power.sum_rate(idx,is), res_power.max_min_rate(idx,is), res_power.rho_used(idx,is));
 end
 fprintf('======================================\n\n');
 end

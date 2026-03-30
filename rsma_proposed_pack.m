@@ -41,6 +41,10 @@ met.sinr_common_u1 = rs.sinr_common_u1;
 met.sinr_common_u2 = rs.sinr_common_u2;
 met.sinr_private_u1 = rs.sinr_private_u1;
 met.sinr_private_u2 = rs.sinr_private_u2;
+met.Pc = rs.Pc;
+met.P1 = rs.P1;
+met.P2 = rs.P2;
+met.mu = rs.mu;
 end
 
 function met = local_rsma_opt(ch, Pt, sic_err, sigma2, rho_grid, rate_threshold, harvest_cfg)
@@ -62,5 +66,7 @@ if rsma_pack_call_count <= 3 || mod(rsma_pack_call_count, 100) == 0
     fprintf(['[rsma_opt_pack] call=%d | zeta=%.3f | alpha_c=%.3f alpha_1=%.3f alpha_2=%.3f | ' ...
              'mu=%.3f | max-min=%.4f | sum-rate=%.4f | all-common=%d\n'], ...
         rsma_pack_call_count, best.zeta, alpha_c, alpha_1, alpha_2, best.mu, met.max_min_rate, met.sum_rate, is_all_common);
+    fprintf(['[rsma_handoff] opt(Pc=%.4g,P1=%.4g,P2=%.4g,mu=%.3f) -> core_used(Pc=%.4g,P1=%.4g,P2=%.4g,mu=%.3f)\n'], ...
+        best.Pc, best.P1, best.P2, best.mu, met.Pc, met.P1, met.P2, met.mu);
 end
 end

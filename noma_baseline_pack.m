@@ -42,16 +42,19 @@ best_rho = rho_grid(1);
 best_met = [];
 tick = max(1, floor(numel(rho_grid)/5));
 rho_max_feasible = local_rho_max_from_harvest(ch, Pt, harvest_cfg);
+num_before = numel(rho_grid);
 if isfinite(rho_max_feasible)
     rho_grid = rho_grid(rho_grid <= rho_max_feasible + 1e-12);
 end
 if isempty(rho_grid)
     rho_grid = min(max(rho_max_feasible, 0), 1);
 end
+num_after = numel(rho_grid);
+num_skipped = max(0, num_before - num_after);
 
 if do_log
-    fprintf('[noma_opt] call=%d | rho candidates=%d | feasible rho_max=%.3f\n', ...
-        noma_opt_call_count, numel(rho_grid), rho_max_feasible);
+    fprintf('[noma_opt] call=%d | rho candidates=%d | feasible rho_max=%.3f | skipped infeasible=%d\n', ...
+        noma_opt_call_count, num_after, rho_max_feasible, num_skipped);
 end
 
 for ir = 1:numel(rho_grid)

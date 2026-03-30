@@ -93,13 +93,16 @@ rsma_opt_call_count = rsma_opt_call_count + 1;
 do_log = (rsma_opt_call_count <= 3) || (mod(rsma_opt_call_count, 100) == 0);
 tick = max(1, floor(numel(zeta_grid)/5));
 zeta_max_feasible = local_rho_max_from_harvest(ch, Ps, harvest_cfg);
+num_before = numel(zeta_grid);
 zeta_grid = zeta_grid(zeta_grid <= zeta_max_feasible + 1e-12);
 if isempty(zeta_grid)
     zeta_grid = min(max(zeta_max_feasible, 0), 1);
 end
+num_after = numel(zeta_grid);
+num_skipped = max(0, num_before - num_after);
 if do_log
-    fprintf('[rsma_opt] call=%d | zeta candidates=%d | feasible zeta_max=%.3f | p_step=%.3f | mu candidates=%d\n', ...
-        rsma_opt_call_count, numel(zeta_grid), zeta_max_feasible, p_step, numel(mu_grid));
+    fprintf('[rsma_opt] call=%d | zeta candidates=%d | feasible zeta_max=%.3f | skipped infeasible=%d | p_step=%.3f | mu candidates=%d\n', ...
+        rsma_opt_call_count, num_after, zeta_max_feasible, num_skipped, p_step, numel(mu_grid));
 end
 
 for iz = 1:numel(zeta_grid)

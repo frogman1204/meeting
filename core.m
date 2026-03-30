@@ -104,6 +104,8 @@ out.C2 = C2;
 out.Pc = Pc;
 out.P1 = P1;
 out.P2 = P2;
+out.mu = mu;
+out.rho = rho;
 out.g1 = g1;
 out.g2 = g2;
 end
