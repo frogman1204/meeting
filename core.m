@@ -75,14 +75,17 @@ end
 g1 = abs(ch.hSR1)^2 + rho * abs(ch.hSF)^2 * abs(ch.gFR1)^2;
 g2 = abs(ch.hSR2)^2 + rho * abs(ch.hSF)^2 * abs(ch.gFR2)^2;
 
-sinr_c1 = Pc * g1 / (P1 * g1 + P2 * g1 + sigma2);
-sinr_c2 = Pc * g2 / (P1 * g2 + P2 * g2 + sigma2);
+% Include SIC-imperfection sensitivity on RSMA common decoding as an
+% effective residual self-interference term.
+sinr_c1 = Pc * g1 / (P1 * g1 + P2 * g1 + sic_err * Pc * g1 + sigma2);
+sinr_c2 = Pc * g2 / (P1 * g2 + P2 * g2 + sic_err * Pc * g2 + sigma2);
 Rc_u1 = log2(1 + sinr_c1);
 Rc_u2 = log2(1 + sinr_c2);
 Rc = min(Rc_u1, Rc_u2);
 
 sinr_p1 = P1 * g1 / (P2 * g1 * sic_err + sigma2);
-sinr_p2 = P2 * g2 / (P1 * g2 + sigma2);
+% Apply SIC-imperfection consistently to private decoding for both users.
+sinr_p2 = P2 * g2 / (P1 * g2 * sic_err + sigma2);
 
 mu = 0.5;
 if isfield(rsma_cfg, 'mu')
@@ -109,6 +112,7 @@ out.P1 = P1;
 out.P2 = P2;
 out.mu = mu;
 out.rho = rho;
+out.sic_err_used = sic_err;
 out.g1 = g1;
 out.g2 = g2;
 end
