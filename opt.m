@@ -21,15 +21,20 @@ end
 
 end
 
-function best = local_rsma_power(ch, Ps, sic_err, sigma2, zeta_fixed, p_step, mu_grid)
+function best = local_rsma_power(ch, Ps, sic_err, sigma2, zeta_fixed, p_step, mu_grid, harvest_cfg)
 if nargin < 6
     p_step = 0.05;
 end
 if nargin < 7 || isempty(mu_grid)
     mu_grid = 0.1:0.1:0.9;
 end
+if nargin < 8
+    harvest_cfg = struct();
+end
 
 alphas = 0:p_step:1;
+max_common_frac = local_get_or(harvest_cfg, 'max_common_frac', 1.0);
+min_private_frac = local_get_or(harvest_cfg, 'min_private_frac', 0.0);
 
 best.max_min_rate = -inf;
 best.sum_rate = -inf;
@@ -41,6 +46,8 @@ for ac = alphas
     for a1 = alphas
         if ac + a1 > 1, continue; end
         a2 = 1 - ac - a1;
+        if ac > max_common_frac + 1e-12, continue; end
+        if a1 < min_private_frac - 1e-12 || a2 < min_private_frac - 1e-12, continue; end
         Pc = Ps * ac; P1 = Ps * a1; P2 = Ps * a2;
         for imu = 1:numel(mu_grid)
             mu = mu_grid(imu);
@@ -63,12 +70,15 @@ for ac = alphas
 end
 end
 
-function best = local_rsma_power_zeta(ch, Ps, sic_err, sigma2, zeta_grid, p_step, mu_grid)
+function best = local_rsma_power_zeta(ch, Ps, sic_err, sigma2, zeta_grid, p_step, mu_grid, harvest_cfg)
 if nargin < 6
     p_step = 0.05;
 end
 if nargin < 7 || isempty(mu_grid)
     mu_grid = 0.1:0.1:0.9;
+end
+if nargin < 8
+    harvest_cfg = struct();
 end
 
 best.max_min_rate = -inf;
@@ -82,9 +92,14 @@ if isempty(rsma_opt_call_count), rsma_opt_call_count = 0; end
 rsma_opt_call_count = rsma_opt_call_count + 1;
 do_log = (rsma_opt_call_count <= 3) || (mod(rsma_opt_call_count, 100) == 0);
 tick = max(1, floor(numel(zeta_grid)/5));
+zeta_max_feasible = local_rho_max_from_harvest(ch, Ps, harvest_cfg);
+zeta_grid = zeta_grid(zeta_grid <= zeta_max_feasible + 1e-12);
+if isempty(zeta_grid)
+    zeta_grid = min(max(zeta_max_feasible, 0), 1);
+end
 if do_log
-    fprintf('[rsma_opt] call=%d | zeta candidates=%d | p_step=%.3f | mu candidates=%d\n', ...
-        rsma_opt_call_count, numel(zeta_grid), p_step, numel(mu_grid));
+    fprintf('[rsma_opt] call=%d | zeta candidates=%d | feasible zeta_max=%.3f | p_step=%.3f | mu candidates=%d\n', ...
+        rsma_opt_call_count, numel(zeta_grid), zeta_max_feasible, p_step, numel(mu_grid));
 end
 
 for iz = 1:numel(zeta_grid)
@@ -92,7 +107,7 @@ for iz = 1:numel(zeta_grid)
     if do_log && (iz == 1 || iz == numel(zeta_grid) || mod(iz, tick) == 0)
         fprintf('  [rsma_opt] zeta idx %d/%d (zeta=%.3f)\n', iz, numel(zeta_grid), zeta);
     end
-    tmp = local_rsma_power(ch, Ps, sic_err, sigma2, zeta, p_step, mu_grid);
+    tmp = local_rsma_power(ch, Ps, sic_err, sigma2, zeta, p_step, mu_grid, harvest_cfg);
     if (tmp.max_min_rate > best.max_min_rate + 1e-12) || ...
        (abs(tmp.max_min_rate - best.max_min_rate) <= 1e-12 && tmp.sum_rate > best.sum_rate)
         best = tmp;
@@ -100,7 +115,34 @@ for iz = 1:numel(zeta_grid)
     end
 end
 if do_log
+    sumP = max(best.Pc + best.P1 + best.P2, eps);
+    alpha_c = best.Pc / sumP; alpha_1 = best.P1 / sumP; alpha_2 = best.P2 / sumP;
+    is_all_common = (alpha_c > 1-1e-9) && (alpha_1 < 1e-9) && (alpha_2 < 1e-9);
     fprintf('[rsma_opt] best zeta=%.3f | max-min=%.4f | sum-rate=%.4f | mu=%.3f | Pc=%.4g | P1=%.4g | P2=%.4g\n', ...
         best.zeta, best.max_min_rate, best.sum_rate, best.mu, best.Pc, best.P1, best.P2);
+    fprintf('          alpha_c=%.3f alpha_1=%.3f alpha_2=%.3f | all-common=%d\n', alpha_c, alpha_1, alpha_2, is_all_common);
 end
+end
+
+function rho_max = local_rho_max_from_harvest(ch, Pt, h)
+rho_max = 1.0;
+if ~isfield(h, 'enable') || ~h.enable
+    return;
+end
+eta_h = local_get_or(h, 'eta_h', 0.6);
+T = local_get_or(h, 'T', 1.0);
+E_req = local_get_or(h, 'E_req', 0.0);
+P_cir = local_get_or(h, 'P_cir', 0.0);
+den = eta_h * Pt * abs(ch.hSF)^2 * T;
+need = E_req + P_cir*T;
+if den <= 0
+    rho_max = 0;
+else
+    rho_max = 1 - need/den;
+end
+rho_max = min(max(rho_max, 0), 1);
+end
+
+function v = local_get_or(s, k, d)
+if isfield(s, k), v = s.(k); else, v = d; end
 end

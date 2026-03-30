@@ -1,9 +1,15 @@
-function met = noma_baseline_pack(mode, ch, Pt, sic_err, sigma2, rho_arg, rate_threshold)
+function met = noma_baseline_pack(mode, ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, varargin)
 %NOMA_BASELINE_PACK NOMA baseline family module.
 % Modes:
 %   pure  : Pure NOMA
 %   fixed : NOMA-AmBC with fixed rho
 %   opt   : NOMA-AmBC with rho grid search
+
+if nargin >= 8
+    harvest_cfg = varargin{1};
+else
+    harvest_cfg = struct();
+end
 
 switch lower(mode)
     case 'pure'
@@ -11,7 +17,7 @@ switch lower(mode)
     case 'fixed'
         met = local_noma_eval(ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, NaN);
     case 'opt'
-        met = local_noma_opt(ch, Pt, sic_err, sigma2, rho_arg, rate_threshold);
+        met = local_noma_opt(ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, harvest_cfg);
     otherwise
         error('Unknown NOMA baseline mode: %s', mode);
 end
@@ -24,7 +30,7 @@ total_power = Pt + 0.1 + 0.05*rho;
 met = calc_pack('compute_metrics_scheme', R1, R2, total_power, rho, rho_opt, rate_threshold);
 end
 
-function met = local_noma_opt(ch, Pt, sic_err, sigma2, rho_grid, rate_threshold)
+function met = local_noma_opt(ch, Pt, sic_err, sigma2, rho_grid, rate_threshold, harvest_cfg)
 persistent noma_opt_call_count;
 if isempty(noma_opt_call_count), noma_opt_call_count = 0; end
 noma_opt_call_count = noma_opt_call_count + 1;
@@ -35,9 +41,17 @@ best_sum = -inf;
 best_rho = rho_grid(1);
 best_met = [];
 tick = max(1, floor(numel(rho_grid)/5));
+rho_max_feasible = local_rho_max_from_harvest(ch, Pt, harvest_cfg);
+if isfinite(rho_max_feasible)
+    rho_grid = rho_grid(rho_grid <= rho_max_feasible + 1e-12);
+end
+if isempty(rho_grid)
+    rho_grid = min(max(rho_max_feasible, 0), 1);
+end
 
 if do_log
-    fprintf('[noma_opt] call=%d | rho candidates=%d\n', noma_opt_call_count, numel(rho_grid));
+    fprintf('[noma_opt] call=%d | rho candidates=%d | feasible rho_max=%.3f\n', ...
+        noma_opt_call_count, numel(rho_grid), rho_max_feasible);
 end
 
 for ir = 1:numel(rho_grid)
@@ -60,5 +74,29 @@ met = best_met;
 if do_log
     fprintf('[noma_opt] best rho=%.3f | max-min=%.4f | sum-rate=%.4f\n', ...
         best_rho, met.max_min_rate, met.sum_rate);
+end
+
+function rho_max = local_rho_max_from_harvest(ch, Pt, h)
+% E_h = eta_h * (1-rho) * Pt * |hSF|^2 * T >= E_req + P_cir*T
+rho_max = 1.0;
+if ~isfield(h, 'enable') || ~h.enable
+    return;
+end
+eta_h = local_get_or(h, 'eta_h', 0.6);
+T = local_get_or(h, 'T', 1.0);
+E_req = local_get_or(h, 'E_req', 0.0);
+P_cir = local_get_or(h, 'P_cir', 0.0);
+den = eta_h * Pt * abs(ch.hSF)^2 * T;
+need = E_req + P_cir*T;
+if den <= 0
+    rho_max = 0;
+else
+    rho_max = 1 - need/den;
+end
+rho_max = min(max(rho_max, 0), 1);
+end
+
+function v = local_get_or(s, k, d)
+if isfield(s, k), v = s.(k); else, v = d; end
 end
 end

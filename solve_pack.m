@@ -1,4 +1,4 @@
-function met = solve_pack(mode, ch, Pt, sic_err, sigma2, rho_arg, rate_threshold)
+function met = solve_pack(mode, ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, varargin)
 %SOLVE_PACK Router between NOMA baseline and RSMA proposed modules.
 % Inputs:
 %   mode           : scheme key
@@ -10,19 +10,25 @@ function met = solve_pack(mode, ch, Pt, sic_err, sigma2, rho_arg, rate_threshold
 % Output:
 %   met            : unified metric struct
 
+if nargin >= 8
+    harvest_cfg = varargin{1};
+else
+    harvest_cfg = struct();
+end
+
 switch lower(mode)
     case 'pure_noma'
-        met = noma_baseline_pack('pure', ch, Pt, sic_err, sigma2, 0, rate_threshold);
+        met = noma_baseline_pack('pure', ch, Pt, sic_err, sigma2, 0, rate_threshold, harvest_cfg);
     case 'noma_fixed'
-        met = noma_baseline_pack('fixed', ch, Pt, sic_err, sigma2, rho_arg, rate_threshold);
+        met = noma_baseline_pack('fixed', ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, harvest_cfg);
     case 'noma_opt'
-        met = noma_baseline_pack('opt', ch, Pt, sic_err, sigma2, rho_arg, rate_threshold);
+        met = noma_baseline_pack('opt', ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, harvest_cfg);
     case 'pure_rsma'
-        met = rsma_proposed_pack('pure', ch, Pt, sic_err, sigma2, 0, rate_threshold);
+        met = rsma_proposed_pack('pure', ch, Pt, sic_err, sigma2, 0, rate_threshold, harvest_cfg);
     case 'rsma_fixed'
-        met = rsma_proposed_pack('fixed', ch, Pt, sic_err, sigma2, rho_arg, rate_threshold);
+        met = rsma_proposed_pack('fixed', ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, harvest_cfg);
     case 'rsma_opt'
-        met = rsma_proposed_pack('opt', ch, Pt, sic_err, sigma2, rho_arg, rate_threshold);
+        met = rsma_proposed_pack('opt', ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, harvest_cfg);
     otherwise
         error('Unknown solve mode: %s', mode);
 end

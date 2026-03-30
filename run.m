@@ -12,6 +12,9 @@ switch lower(mode)
     case 'full'
         params = get_pack('full');
         out = run('core', params, 'full');
+    case 'debug'
+        params = get_pack('debug');
+        out = run('core', params, 'debug');
     case 'core'
         out = run_core(varargin{1}, varargin{2});
     case 'sweep_power'
@@ -131,7 +134,7 @@ for ix=1:nx
             fprintf('  [sweep:%s x:%d/%d] MC %d/%d\n', kind, ix, nx, imc, p.numMC);
         end
         ch=apply_pack('generate_channels'); ch=apply_pack('apply_csi_error',ch,csi); ch=apply_pack('apply_blockage_effect',ch,blk);
-        sols={solve_pack('pure_noma',ch,Pt,sic,p.sigma2,0,p.rate_threshold), solve_pack('noma_fixed',ch,Pt,sic,p.sigma2,rho_fixed,p.rate_threshold), solve_pack('noma_opt',ch,Pt,sic,p.sigma2,rho_grid,p.rate_threshold), solve_pack('pure_rsma',ch,Pt,sic,p.sigma2,0,p.rate_threshold), solve_pack('rsma_fixed',ch,Pt,sic,p.sigma2,rho_fixed,p.rate_threshold), solve_pack('rsma_opt',ch,Pt,sic,p.sigma2,rho_grid,p.rate_threshold)};
+        sols={solve_pack('pure_noma',ch,Pt,sic,p.sigma2,0,p.rate_threshold,p.harvest_cfg), solve_pack('noma_fixed',ch,Pt,sic,p.sigma2,rho_fixed,p.rate_threshold,p.harvest_cfg), solve_pack('noma_opt',ch,Pt,sic,p.sigma2,rho_grid,p.rate_threshold,p.harvest_cfg), solve_pack('pure_rsma',ch,Pt,sic,p.sigma2,0,p.rate_threshold,p.harvest_cfg), solve_pack('rsma_fixed',ch,Pt,sic,p.sigma2,rho_fixed,p.rate_threshold,p.harvest_cfg), solve_pack('rsma_opt',ch,Pt,sic,p.sigma2,rho_grid,p.rate_threshold,p.harvest_cfg)};
         for is=1:ns
             s=sols{is}; tmp(imc,is,:)=[s.R1 s.R2 s.sum_rate s.max_min_rate s.jain_fairness s.energy_efficiency s.rho_used s.rho_opt s.ber_tag s.ber_user1 s.ber_user2 s.outage_flag];
         end

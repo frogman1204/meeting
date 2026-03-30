@@ -25,10 +25,18 @@ To run full mode, edit `main.m` and set:
 ```matlab
 mode_name = 'full';
 ```
+Lightweight debug mode:
+```matlab
+run('debug')
+```
 
 ## Output folders
 - Full outputs (figures/mat/summary/csv): `out/<mode>_run_yyyymmdd_HHMMSS/`
 - CSV-only exports (for quick spreadsheet review): `result/yyyymmdd_HHMMSS/`
+
+## Notes
+- Optimized AmBC paths include a harvesting-feasibility constraint using `p.harvest_cfg`
+  (see `get_pack.m`).
 
 ## File change summary
 - Newly added in this update:
