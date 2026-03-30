@@ -3,7 +3,8 @@ function varargout = core(mode, varargin)
 % Modes:
 %   'ch'         -> ch = core('ch')
 %   'rates'      -> [R1,R2] = core('rates', ch, Pt, sic_err, sigma2, rho)
-%   'rates_rsma' -> [R1,R2,out] = core('rates_rsma', ch, Ps, sic_err, sigma2, rho)
+%   'rates_rsma' -> [R1,R2,out] = core('rates_rsma', ch, Ps, sic_err, sigma2, rho, rsma_cfg)
+%                   rsma_cfg is optional (Pc,P1,P2,mu or alpha_c/alpha_1/alpha_2,mu)
 
 switch lower(mode)
     case 'ch'
@@ -38,14 +39,27 @@ R1 = log2(1 + sinr1);
 R2 = log2(1 + sinr2);
 end
 
-function [R1, R2, out] = local_rates_rsma(ch, Ps, sic_err, sigma2, rho)
-alpha_c = 0.20;
-alpha_1 = 0.40;
-alpha_2 = 1 - alpha_c - alpha_1;
+function [R1, R2, out] = local_rates_rsma(ch, Ps, sic_err, sigma2, rho, rsma_cfg)
+if nargin < 6 || isempty(rsma_cfg)
+    rsma_cfg = struct();
+end
 
-Pc = Ps * alpha_c;
-P1 = Ps * alpha_1;
-P2 = Ps * alpha_2;
+if isfield(rsma_cfg, 'Pc') && isfield(rsma_cfg, 'P1') && isfield(rsma_cfg, 'P2')
+    Pc = rsma_cfg.Pc;
+    P1 = rsma_cfg.P1;
+    P2 = rsma_cfg.P2;
+else
+    alpha_c = 0.20;
+    alpha_1 = 0.40;
+    alpha_2 = 1 - alpha_c - alpha_1;
+    if isfield(rsma_cfg, 'alpha_c'), alpha_c = rsma_cfg.alpha_c; end
+    if isfield(rsma_cfg, 'alpha_1'), alpha_1 = rsma_cfg.alpha_1; end
+    if isfield(rsma_cfg, 'alpha_2'), alpha_2 = rsma_cfg.alpha_2; end
+
+    Pc = Ps * alpha_c;
+    P1 = Ps * alpha_1;
+    P2 = Ps * alpha_2;
+end
 
 sumP = Pc + P1 + P2;
 if sumP > 0
@@ -68,6 +82,10 @@ sinr_p1 = P1 * g1 / (P2 * g1 * sic_err + sigma2);
 sinr_p2 = P2 * g2 / (P1 * g2 + sigma2);
 
 mu = 0.5;
+if isfield(rsma_cfg, 'mu')
+    mu = rsma_cfg.mu;
+end
+mu = min(max(mu, 0), 1);
 C1 = mu * Rc;
 C2 = (1 - mu) * Rc;
 

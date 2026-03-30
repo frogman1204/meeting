@@ -79,6 +79,7 @@ figs{end+1}=item('H_ber_vs_rho',plot_pack('ber',res_rho.x_values,res_rho.ber_use
 figs{end+1}=item('H_ber_vs_csi',plot_pack('ber',res_csi.x_values,res_csi.ber_user1,params.scheme_names,'CSI error','BER vs CSI error (placeholder)'));
 
 summary = summary_local(mode_name, params, res_power);
+print_scheme_metrics_local(params, res_power);
 save_pack(out_dir, params, all_results, tables, figs, summary);
 end
 
@@ -130,6 +131,17 @@ row=res_power.max_min_rate(idx40,:); [~,best_idx]=max(row);
 lines{end+1}=sprintf('At Pt = %.1f dBm, %s achieved the best max-min rate.',p.Pt_dBm_vec(idx40),p.scheme_names{best_idx});
 lines{end+1}='Optimized rho outperformed fixed rho consistently in RSMA-AmBC.';
 lines{end+1}='Pure RSMA outperformed Pure NOMA in fairness under the tested settings.';
+end
+
+function print_scheme_metrics_local(p, res_power)
+idx = find(p.Pt_dBm_vec == p.Pt_dBm_default, 1);
+if isempty(idx), idx = numel(p.Pt_dBm_vec); end
+fprintf('\n=== Scheme comparison at Pt=%.1f dBm ===\n', p.Pt_dBm_vec(idx));
+for is = 1:numel(p.scheme_names)
+    fprintf('%s | sum-rate=%.4f | max-min=%.4f\n', ...
+        p.scheme_names{is}, res_power.sum_rate(idx,is), res_power.max_min_rate(idx,is));
+end
+fprintf('======================================\n\n');
 end
 
 function x=item(name,fig), x=struct('name',name,'fig',fig); end

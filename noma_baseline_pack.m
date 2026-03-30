@@ -25,6 +25,7 @@ met = calc_pack('compute_metrics_scheme', R1, R2, total_power, rho, rho_opt, rat
 end
 
 function met = local_noma_opt(ch, Pt, sic_err, sigma2, rho_grid, rate_threshold)
+best_min = -inf;
 best_sum = -inf;
 best_rho = rho_grid(1);
 best_met = [];
@@ -32,7 +33,9 @@ best_met = [];
 for ir = 1:numel(rho_grid)
     rho = rho_grid(ir);
     tmp = local_noma_eval(ch, Pt, sic_err, sigma2, rho, rate_threshold, rho);
-    if tmp.sum_rate > best_sum
+    if (tmp.max_min_rate > best_min + 1e-12) || ...
+       (abs(tmp.max_min_rate - best_min) <= 1e-12 && tmp.sum_rate > best_sum)
+        best_min = tmp.max_min_rate;
         best_sum = tmp.sum_rate;
         best_rho = rho;
         best_met = tmp;

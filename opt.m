@@ -21,19 +21,21 @@ end
 
 end
 
-function best = local_rsma_power(ch, Ps, sic_err, sigma2, zeta_fixed, p_step)
+function best = local_rsma_power(ch, Ps, sic_err, sigma2, zeta_fixed, p_step, mu_grid)
 if nargin < 6
     p_step = 0.05;
 end
-
-g1 = abs(ch.hSR1)^2 + zeta_fixed * abs(ch.hSF)^2 * abs(ch.gFR1)^2;
-g2 = abs(ch.hSR2)^2 + zeta_fixed * abs(ch.hSF)^2 * abs(ch.gFR2)^2;
+if nargin < 7 || isempty(mu_grid)
+    mu_grid = 0.1:0.1:0.9;
+end
 
 alphas = 0:p_step:1;
 
+best.max_min_rate = -inf;
 best.sum_rate = -inf;
 best.Pc = 0; best.P1 = 0; best.P2 = 0;
 best.zeta = zeta_fixed;
+best.mu = 0.5;
 best.R1 = 0; best.R2 = 0; best.Rc = 0; best.C1 = 0; best.C2 = 0;
 
 for ac = alphas
@@ -41,41 +43,47 @@ for ac = alphas
         if ac + a1 > 1, continue; end
         a2 = 1 - ac - a1;
         Pc = Ps * ac; P1 = Ps * a1; P2 = Ps * a2;
+        for imu = 1:numel(mu_grid)
+            mu = mu_grid(imu);
+            cfg = struct('Pc', Pc, 'P1', P1, 'P2', P2, 'mu', mu);
+            [R1, R2, rs] = core('rates_rsma', ch, Ps, sic_err, sigma2, zeta_fixed, cfg);
+            sum_rate = R1 + R2;
+            max_min_rate = min(R1, R2);
 
-        sinr_c1 = Pc*g1 / (P1*g1 + P2*g1 + sigma2);
-        sinr_c2 = Pc*g2 / (P1*g2 + P2*g2 + sigma2);
-        Rc = min(log2(1 + sinr_c1), log2(1 + sinr_c2));
-
-        C1 = 0.5 * Rc; C2 = 0.5 * Rc;
-        sinr_p1 = P1*g1 / (P2*g1*sic_err + sigma2);
-        sinr_p2 = P2*g2 / (P1*g2 + sigma2);
-        R1 = C1 + log2(1 + sinr_p1);
-        R2 = C2 + log2(1 + sinr_p2);
-        sum_rate = R1 + R2;
-
-        if sum_rate > best.sum_rate
-            best.sum_rate = sum_rate;
-            best.Pc = Pc; best.P1 = P1; best.P2 = P2;
-            best.R1 = R1; best.R2 = R2; best.Rc = Rc; best.C1 = C1; best.C2 = C2;
+            if (max_min_rate > best.max_min_rate + 1e-12) || ...
+               (abs(max_min_rate - best.max_min_rate) <= 1e-12 && sum_rate > best.sum_rate)
+                best.max_min_rate = max_min_rate;
+                best.sum_rate = sum_rate;
+                best.Pc = rs.Pc; best.P1 = rs.P1; best.P2 = rs.P2;
+                best.mu = mu;
+                best.R1 = R1; best.R2 = R2; best.Rc = rs.common_rate;
+                best.C1 = rs.C1; best.C2 = rs.C2;
+            end
         end
     end
 end
 end
 
-function best = local_rsma_power_zeta(ch, Ps, sic_err, sigma2, zeta_grid, p_step)
+function best = local_rsma_power_zeta(ch, Ps, sic_err, sigma2, zeta_grid, p_step, mu_grid)
 if nargin < 6
     p_step = 0.05;
 end
+if nargin < 7 || isempty(mu_grid)
+    mu_grid = 0.1:0.1:0.9;
+end
 
+best.max_min_rate = -inf;
 best.sum_rate = -inf;
 best.Pc = 0; best.P1 = 0; best.P2 = 0;
 best.zeta = 0;
+best.mu = 0.5;
 best.R1 = 0; best.R2 = 0; best.Rc = 0; best.C1 = 0; best.C2 = 0;
 
 for iz = 1:numel(zeta_grid)
     zeta = zeta_grid(iz);
-    tmp = local_rsma_power(ch, Ps, sic_err, sigma2, zeta, p_step);
-    if tmp.sum_rate > best.sum_rate
+    tmp = local_rsma_power(ch, Ps, sic_err, sigma2, zeta, p_step, mu_grid);
+    if (tmp.max_min_rate > best.max_min_rate + 1e-12) || ...
+       (abs(tmp.max_min_rate - best.max_min_rate) <= 1e-12 && tmp.sum_rate > best.sum_rate)
         best = tmp;
         best.zeta = zeta;
     end
