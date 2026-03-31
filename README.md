@@ -43,7 +43,7 @@ Paper-mode output CSV names:
 - `tbl_sic_paper.csv`
 
 ## OMA-AmBC assumption
-OMA baseline in `paper_reproduction` is intentionally conservative: two orthogonal slots (`1/2` prelog per user), same average source-power budget as NOMA (`Pt` over frame, implemented as `Pt/2` per active OMA slot), no inter-user interference, and direct-link-only gains (no extra AmBC combining gain).
+`paper_reproduction` uses a true OMA-AmBC baseline: two orthogonal slots (`1/2` prelog per user), no inter-user interference, source power `Pt` in each active slot, and effective user gain `direct + backscatter` (no extra combining gain).
 
 ## Structure
 - `main.m` : execution entry script

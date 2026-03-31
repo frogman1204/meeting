@@ -27,6 +27,8 @@ only_paper_plots = local_get_or(pcfg,'plot_power_sum',false) && local_get_or(pcf
     ~local_get_or(pcfg,'plot_power_mm',false) && ~local_get_or(pcfg,'plot_blockage_mm',false) && ...
     ~local_get_or(pcfg,'plot_csi',false) && ~local_get_or(pcfg,'plot_rho',false) && ~local_get_or(pcfg,'plot_rsma_diag',false);
 fprintf('[validate_paper_mode] paper_style_only=%d (sweeps=%d, plots=%d)\n', only_paper_sweeps && only_paper_plots, only_paper_sweeps, only_paper_plots);
+oma_baseline_type = 'true OMA-AmBC';
+fprintf('[validate_paper_mode] oma_baseline_type=%s\n', oma_baseline_type);
 
 res_power = run('sweep_power', p);
 res_sic = run('sweep_sic', p);
