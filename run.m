@@ -15,6 +15,12 @@ switch lower(mode)
     case 'debug'
         params = get_pack('debug');
         out = run('core', params, 'debug');
+    case 'paper_reproduction'
+        params = get_pack('paper_reproduction');
+        out = run('core', params, 'paper_reproduction');
+    case 'research_rsma'
+        params = get_pack('research_rsma');
+        out = run('core', params, 'research_rsma');
     case 'core'
         out = run_core(varargin{1}, varargin{2});
     case 'sweep_power'
@@ -51,12 +57,18 @@ res_sic = run_or_empty('sic', enabled, params);
 res_tags = run_or_empty('tags', enabled, params);
 
 all_results = struct('power',res_power,'csi',res_csi,'blockage',res_blk,'rho',res_rho,'sic',res_sic,'tags',res_tags);
-tables = {
- struct('name','tbl_power.csv','table',calc_pack('build_table_from_results',res_power)), ...
- struct('name','tbl_csi.csv','table',calc_pack('build_table_from_results',res_csi)), ...
- struct('name','tbl_blockage.csv','table',calc_pack('build_table_from_results',res_blk)), ...
- struct('name','tbl_rho.csv','table',calc_pack('build_table_from_results',res_rho)), ...
- struct('name','tbl_sic.csv','table',calc_pack('build_table_from_results',res_sic))};
+if strcmpi(local_get_or(params,'experiment_mode','research_rsma'),'paper_reproduction')
+    tables = { ...
+     struct('name','tbl_power_paper.csv','table',calc_pack('build_table_from_results',res_power)), ...
+     struct('name','tbl_sic_paper.csv','table',calc_pack('build_table_from_results',res_sic))};
+else
+    tables = { ...
+     struct('name','tbl_power.csv','table',calc_pack('build_table_from_results',res_power)), ...
+     struct('name','tbl_csi.csv','table',calc_pack('build_table_from_results',res_csi)), ...
+     struct('name','tbl_blockage.csv','table',calc_pack('build_table_from_results',res_blk)), ...
+     struct('name','tbl_rho.csv','table',calc_pack('build_table_from_results',res_rho)), ...
+     struct('name','tbl_sic.csv','table',calc_pack('build_table_from_results',res_sic))};
+end
 
 figs = {};
 pcfg = local_get_or(params, 'plot_cfg', struct());
@@ -142,24 +154,36 @@ for ix=1:nx
             fprintf('  [sweep:%s x:%d/%d] MC %d/%d\n', kind, ix, nx, imc, p.numMC);
         end
         ch=apply_pack('generate_channels'); ch=apply_pack('apply_csi_error',ch,csi); ch=apply_pack('apply_blockage_effect',ch,blk);
-        sols={solve_pack('pure_noma',ch,Pt,sic,p.sigma2,0,p.rate_threshold,p.harvest_cfg,p.xi_grid), solve_pack('noma_fixed',ch,Pt,sic,p.sigma2,rho_fixed,p.rate_threshold,p.harvest_cfg,p.xi_grid), solve_pack('noma_opt',ch,Pt,sic,p.sigma2,rho_grid,p.rate_threshold,p.harvest_cfg,p.xi_grid), solve_pack('pure_rsma',ch,Pt,sic,p.sigma2,0,p.rate_threshold,p.harvest_cfg,p.xi_grid), solve_pack('rsma_fixed',ch,Pt,sic,p.sigma2,rho_fixed,p.rate_threshold,p.harvest_cfg,p.xi_grid), solve_pack('rsma_opt',ch,Pt,sic,p.sigma2,rho_grid,p.rate_threshold,p.harvest_cfg,p.xi_grid)};
-        nopt = sols{3}; ropt = sols{6};
-        if isfield(nopt,'rho_opt'), noma_rho_sel(imc)=nopt.rho_opt; end
-        if isfield(nopt,'rho_feasible_max'), noma_rho_max(imc)=nopt.rho_feasible_max; end
-        if isfield(nopt,'hit_feasible_bound'), noma_hit(imc)=nopt.hit_feasible_bound; end
-        if isfield(nopt,'infeasible_skip_frac'), noma_skip(imc)=nopt.infeasible_skip_frac; end
-        if isfield(ropt,'rho_opt'), rsma_zeta_sel(imc)=ropt.rho_opt; end
-        if isfield(ropt,'zeta_feasible_max'), rsma_zeta_max(imc)=ropt.zeta_feasible_max; end
-        if isfield(ropt,'hit_feasible_bound'), rsma_hit(imc)=ropt.hit_feasible_bound; end
-        if isfield(ropt,'infeasible_skip_frac'), rsma_skip(imc)=ropt.infeasible_skip_frac; end
-        if isfield(ropt,'alpha_c'), rsma_ac(imc)=ropt.alpha_c; end
-        if isfield(ropt,'alpha_1'), rsma_a1(imc)=ropt.alpha_1; end
-        if isfield(ropt,'alpha_2'), rsma_a2(imc)=ropt.alpha_2; end
-        if isfield(ropt,'mu'), rsma_mu(imc)=ropt.mu; end
-        if isfield(ropt,'Pc'), rsma_pc(imc)=ropt.Pc; end
-        if isfield(ropt,'P1'), rsma_p1(imc)=ropt.P1; end
-        if isfield(ropt,'P2'), rsma_p2(imc)=ropt.P2; end
-        if isfield(ropt,'is_all_common'), rsma_all_common(imc)=ropt.is_all_common; end
+        sols = cell(1, ns);
+        for is=1:ns
+            key = p.scheme_keys{is};
+            if any(strcmp(key, {'pure_noma','pure_rsma'}))
+                rho_arg_local = 0;
+            elseif any(strcmp(key, {'noma_fixed','rsma_fixed','oma_ambc'}))
+                rho_arg_local = rho_fixed;
+            else
+                rho_arg_local = rho_grid;
+            end
+            sols{is} = solve_pack(key,ch,Pt,sic,p.sigma2,rho_arg_local,p.rate_threshold,p.harvest_cfg,p.xi_grid,local_get_or(p,'experiment_mode','research_rsma'));
+        end
+        nopt = local_get_scheme_sol(sols, p, 'noma_opt');
+        ropt = local_get_scheme_sol(sols, p, 'rsma_opt');
+        if ~isempty(nopt) && isfield(nopt,'rho_opt'), noma_rho_sel(imc)=nopt.rho_opt; end
+        if ~isempty(nopt) && isfield(nopt,'rho_feasible_max'), noma_rho_max(imc)=nopt.rho_feasible_max; end
+        if ~isempty(nopt) && isfield(nopt,'hit_feasible_bound'), noma_hit(imc)=nopt.hit_feasible_bound; end
+        if ~isempty(nopt) && isfield(nopt,'infeasible_skip_frac'), noma_skip(imc)=nopt.infeasible_skip_frac; end
+        if ~isempty(ropt) && isfield(ropt,'rho_opt'), rsma_zeta_sel(imc)=ropt.rho_opt; end
+        if ~isempty(ropt) && isfield(ropt,'zeta_feasible_max'), rsma_zeta_max(imc)=ropt.zeta_feasible_max; end
+        if ~isempty(ropt) && isfield(ropt,'hit_feasible_bound'), rsma_hit(imc)=ropt.hit_feasible_bound; end
+        if ~isempty(ropt) && isfield(ropt,'infeasible_skip_frac'), rsma_skip(imc)=ropt.infeasible_skip_frac; end
+        if ~isempty(ropt) && isfield(ropt,'alpha_c'), rsma_ac(imc)=ropt.alpha_c; end
+        if ~isempty(ropt) && isfield(ropt,'alpha_1'), rsma_a1(imc)=ropt.alpha_1; end
+        if ~isempty(ropt) && isfield(ropt,'alpha_2'), rsma_a2(imc)=ropt.alpha_2; end
+        if ~isempty(ropt) && isfield(ropt,'mu'), rsma_mu(imc)=ropt.mu; end
+        if ~isempty(ropt) && isfield(ropt,'Pc'), rsma_pc(imc)=ropt.Pc; end
+        if ~isempty(ropt) && isfield(ropt,'P1'), rsma_p1(imc)=ropt.P1; end
+        if ~isempty(ropt) && isfield(ropt,'P2'), rsma_p2(imc)=ropt.P2; end
+        if ~isempty(ropt) && isfield(ropt,'is_all_common'), rsma_all_common(imc)=ropt.is_all_common; end
         for is=1:ns
             if isfield(sols{is},'xi_used')
                 xi_used(imc,is)=sols{is}.xi_used;
@@ -273,6 +297,16 @@ res.sweep_name = kind;
 res.x_label = '';
 fns={'R1','R2','sum_rate','max_min_rate','jain_fairness','energy_efficiency','rho_used','rho_opt','ber_tag','ber_user1','ber_user2','outage_flag'};
 for k=1:numel(fns), res.(fns{k}) = []; end
+end
+
+
+function sol = local_get_scheme_sol(sols, p, key)
+idx = find(strcmp(p.scheme_keys, key), 1);
+if isempty(idx)
+    sol = [];
+else
+    sol = sols{idx};
+end
 end
 
 function v = local_get_or(s, k, d)

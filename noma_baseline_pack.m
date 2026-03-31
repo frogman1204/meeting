@@ -1,90 +1,71 @@
 function met = noma_baseline_pack(mode, ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, varargin)
-%NOMA_BASELINE_PACK NOMA baseline family module.
-% Modes:
-%   pure  : Pure NOMA
-%   fixed : NOMA-AmBC with fixed rho
-%   opt   : NOMA-AmBC with rho grid search
+%NOMA_BASELINE_PACK NOMA/OMA baseline module.
 
-if nargin >= 8
-    harvest_cfg = varargin{1};
-else
-    harvest_cfg = struct();
-end
-if nargin >= 9
-    xi_grid = varargin{2};
-else
-    xi_grid = 0.05:0.05:0.95;
-end
+if nargin >= 8, harvest_cfg = varargin{1}; else, harvest_cfg = struct(); end
+if nargin >= 9, xi_grid = varargin{2}; else, xi_grid = 0.05:0.05:0.95; end
+if nargin >= 10, experiment_mode = varargin{3}; else, experiment_mode = 'research_rsma'; end
 
 switch lower(mode)
     case 'pure'
-        met = local_noma_optimize(ch, Pt, sic_err, sigma2, 0, xi_grid, rate_threshold, harvest_cfg, false);
+        met = local_noma_optimize(ch, Pt, sic_err, sigma2, 0, xi_grid, rate_threshold, harvest_cfg, false, experiment_mode, false);
     case 'fixed'
-        met = local_noma_optimize(ch, Pt, sic_err, sigma2, rho_arg, xi_grid, rate_threshold, harvest_cfg, false);
+        met = local_noma_optimize(ch, Pt, sic_err, sigma2, rho_arg, xi_grid, rate_threshold, harvest_cfg, false, experiment_mode, true);
     case 'opt'
-        met = local_noma_optimize(ch, Pt, sic_err, sigma2, rho_arg, xi_grid, rate_threshold, harvest_cfg, true);
+        met = local_noma_optimize(ch, Pt, sic_err, sigma2, rho_arg, xi_grid, rate_threshold, harvest_cfg, true, experiment_mode, true);
+    case 'oma'
+        met = local_oma_eval(ch, Pt, sigma2, rho_arg(1), rate_threshold);
     otherwise
         error('Unknown NOMA baseline mode: %s', mode);
 end
 
 end
 
-function met = local_noma_eval(ch, Pt, sic_err, sigma2, rho, xi, rate_threshold, rho_opt)
-[R1, R2] = core('rates', ch, Pt, sic_err, sigma2, rho, xi);
+function met = local_noma_eval(ch, Pt, sic_err, sigma2, rho, xi, rate_threshold, rho_opt, use_paper_rates)
+if use_paper_rates
+    [R1, R2] = core('rates_paper_noma', ch, Pt, sic_err, sigma2, rho, xi);
+else
+    [R1, R2] = core('rates', ch, Pt, sic_err, sigma2, rho, xi);
+end
 total_power = Pt + 0.1 + 0.05*rho;
 met = calc_pack('compute_metrics_scheme', R1, R2, total_power, rho, rho_opt, rate_threshold);
 met.xi_used = xi;
 end
 
-function met = local_noma_optimize(ch, Pt, sic_err, sigma2, rho_arg, xi_grid, rate_threshold, harvest_cfg, allow_rho_opt)
-persistent noma_opt_call_count;
-if isempty(noma_opt_call_count), noma_opt_call_count = 0; end
-noma_opt_call_count = noma_opt_call_count + 1;
-do_log = (noma_opt_call_count <= 3) || (mod(noma_opt_call_count, 200) == 0);
-
-best_min = -inf;
-best_sum = -inf;
-if allow_rho_opt
-    rho_grid = rho_arg;
-else
-    rho_grid = rho_arg(1);
+function met = local_oma_eval(ch, Pt, sigma2, rho, rate_threshold)
+[R1, R2] = core('rates_paper_oma', ch, Pt, sigma2, rho);
+total_power = Pt + 0.1 + 0.05*rho;
+met = calc_pack('compute_metrics_scheme', R1, R2, total_power, rho, rho, rate_threshold);
+met.xi_used = NaN;
 end
-best_rho = rho_grid(1);
-best_xi = xi_grid(1);
-best_met = [];
-tick = max(1, floor(numel(rho_grid)/5));
+
+function met = local_noma_optimize(ch, Pt, sic_err, sigma2, rho_arg, xi_grid, rate_threshold, harvest_cfg, allow_rho_opt, experiment_mode, use_paper_rates)
+best_primary = -inf;
+best_secondary = -inf;
+if allow_rho_opt, rho_grid = rho_arg; else, rho_grid = rho_arg(1); end
+best_rho = rho_grid(1); best_xi = xi_grid(1); best_met = [];
+
 rho_max_feasible = local_rho_max_from_harvest(ch, Pt, harvest_cfg);
 num_before = numel(rho_grid);
-if isfinite(rho_max_feasible)
-    rho_grid = rho_grid(rho_grid <= rho_max_feasible + 1e-12);
-end
-if isempty(rho_grid)
-    rho_grid = min(max(rho_max_feasible, 0), 1);
-end
-num_after = numel(rho_grid);
-num_skipped = max(0, num_before - num_after);
-
-if do_log
-    fprintf('[noma_opt] call=%d | rho candidates=%d | feasible rho_max=%.3f | skipped infeasible=%d\n', ...
-        noma_opt_call_count, num_after, rho_max_feasible, num_skipped);
-end
+if isfinite(rho_max_feasible), rho_grid = rho_grid(rho_grid <= rho_max_feasible + 1e-12); end
+if isempty(rho_grid), rho_grid = min(max(rho_max_feasible, 0), 1); end
+num_after = numel(rho_grid); num_skipped = max(0, num_before - num_after);
 
 for ir = 1:numel(rho_grid)
     rho = rho_grid(ir);
     for ix = 1:numel(xi_grid)
         xi = xi_grid(ix);
-        tmp = local_noma_eval(ch, Pt, sic_err, sigma2, rho, xi, rate_threshold, rho);
-    if do_log && (ir == 1 || ir == numel(rho_grid) || mod(ir, tick) == 0)
-        fprintf('  [noma_opt] rho idx %d/%d (rho=%.3f)\n', ir, numel(rho_grid), rho);
-    end
-    if (tmp.max_min_rate > best_min + 1e-12) || ...
-       (abs(tmp.max_min_rate - best_min) <= 1e-12 && tmp.sum_rate > best_sum)
-        best_min = tmp.max_min_rate;
-        best_sum = tmp.sum_rate;
-        best_rho = rho;
-        best_xi = xi;
-        best_met = tmp;
-    end
+        tmp = local_noma_eval(ch, Pt, sic_err, sigma2, rho, xi, rate_threshold, rho, use_paper_rates);
+        if strcmpi(experiment_mode, 'paper_reproduction')
+            primary = tmp.sum_rate;
+            secondary = tmp.max_min_rate;
+        else
+            primary = tmp.max_min_rate;
+            secondary = tmp.sum_rate;
+        end
+        if (primary > best_primary + 1e-12) || (abs(primary - best_primary) <= 1e-12 && secondary > best_secondary)
+            best_primary = primary; best_secondary = secondary;
+            best_rho = rho; best_xi = xi; best_met = tmp;
+        end
     end
 end
 
@@ -94,32 +75,21 @@ best_met.rho_feasible_max = rho_max_feasible;
 best_met.hit_feasible_bound = abs(best_rho - rho_max_feasible) <= 1e-9;
 best_met.infeasible_skip_frac = num_skipped / max(num_before, 1);
 met = best_met;
-if do_log
-    fprintf('[noma_opt] best rho=%.3f | best xi=%.3f | max-min=%.4f | sum-rate=%.4f\n', ...
-        best_rho, best_xi, met.max_min_rate, met.sum_rate);
 end
 
 function rho_max = local_rho_max_from_harvest(ch, Pt, h)
-% E_h = eta_h * (1-rho) * Pt * |hSF|^2 * T >= E_req + P_cir*T
 rho_max = 1.0;
-if ~isfield(h, 'enable') || ~h.enable
-    return;
-end
+if ~isfield(h, 'enable') || ~h.enable, return; end
 eta_h = local_get_or(h, 'eta_h', 0.6);
 T = local_get_or(h, 'T', 1.0);
 E_req = local_get_or(h, 'E_req', 0.0);
 P_cir = local_get_or(h, 'P_cir', 0.0);
 den = eta_h * Pt * abs(ch.hSF)^2 * T;
 need = E_req + P_cir*T;
-if den <= 0
-    rho_max = 0;
-else
-    rho_max = 1 - need/den;
-end
+if den <= 0, rho_max = 0; else, rho_max = 1 - need/den; end
 rho_max = min(max(rho_max, 0), 1);
 end
 
 function v = local_get_or(s, k, d)
 if isfield(s, k), v = s.(k); else, v = d; end
-end
 end
