@@ -84,6 +84,13 @@ p.sigma2 = 0.1;
 p.rng_seed = 1;
 p.harvest_cfg.enable = false;
 p.enabled_sweeps = {'power','sic'};
+p.plot_cfg.plot_power_mm = false;
+p.plot_cfg.plot_power_sum = true;
+p.plot_cfg.plot_blockage_mm = false;
+p.plot_cfg.plot_csi = false;
+p.plot_cfg.plot_rho = false;
+p.plot_cfg.plot_sic = true;
+p.plot_cfg.plot_rsma_diag = false;
 p.tag_count_vec = [];
 [p.scheme_names, p.scheme_keys] = local_scheme_info('paper_reproduction');
 end
