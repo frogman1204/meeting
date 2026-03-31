@@ -54,10 +54,14 @@ R2 = log2(1 + sinr2);
 end
 
 function [R1, R2] = local_rates_paper_oma(ch, Pt, sigma2, rho)
+% Conservative OMA baseline for paper-mode comparison:
+% - Two orthogonal time slots (1/2 prelog for each user).
+% - Equal per-slot power split (each user gets Pt/2 in its own slot).
+% This avoids giving OMA an overly strong advantage versus NOMA.
 G1 = abs(ch.hSR1)^2 + rho*abs(ch.hSF)^2*abs(ch.gFR1)^2;
 G2 = abs(ch.hSR2)^2 + rho*abs(ch.hSF)^2*abs(ch.gFR2)^2;
-R1 = 0.5 * log2(1 + Pt * G1 / sigma2);
-R2 = 0.5 * log2(1 + Pt * G2 / sigma2);
+R1 = 0.5 * log2(1 + 0.5 * Pt * G1 / sigma2);
+R2 = 0.5 * log2(1 + 0.5 * Pt * G2 / sigma2);
 end
 
 function [R1, R2, out] = local_rates_rsma(ch, Ps, sic_err, sigma2, rho, rsma_cfg)

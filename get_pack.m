@@ -108,6 +108,7 @@ h.max_common_frac = 1.0;
 h.min_private_frac = 0.0;
 h.rsma_p_step = 0.1;
 h.mu_grid = 0.1:0.1:0.9;
+h.debug_paper_noma = false;
 end
 
 function c = local_plot_cfg()

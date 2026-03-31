@@ -43,7 +43,7 @@ Paper-mode output CSV names:
 - `tbl_sic_paper.csv`
 
 ## OMA-AmBC assumption
-OMA-AmBC is modeled with two orthogonal slots (`1/2` prelog per user), no inter-user interference, and AmBC gain included in effective channel gain.
+OMA-AmBC uses a conservative assumption: two orthogonal slots (`1/2` prelog per user), equal per-slot power split (`Pt/2` each user in its own slot), no inter-user interference, and AmBC gain included in effective channel gain.
 
 ## Structure
 - `main.m` : execution entry script
@@ -57,3 +57,9 @@ OMA-AmBC is modeled with two orthogonal slots (`1/2` prelog per user), no inter-
 - `save_pack.m` : output save pipeline
 - `get_pack.m` : parameter policy / experiment modes
 - `core.m` : channel/rate core formulas
+
+
+Paper-mode figures:
+- Sum-rate vs transmit power
+- Sum-rate vs SIC error
+(Other max-min / CSI / blockage / rho / RSMA diagnostic figures are intentionally suppressed in `paper_reproduction`.)

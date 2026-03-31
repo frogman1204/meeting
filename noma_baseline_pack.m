@@ -75,6 +75,10 @@ best_met.rho_feasible_max = rho_max_feasible;
 best_met.hit_feasible_bound = abs(best_rho - rho_max_feasible) <= 1e-9;
 best_met.infeasible_skip_frac = num_skipped / max(num_before, 1);
 met = best_met;
+if strcmpi(experiment_mode, 'paper_reproduction') && local_get_or(harvest_cfg, 'debug_paper_noma', false)
+    fprintf('[paper_noma] obj=sum-rate-first | rho=%.3f | xi=%.3f | sum=%.4f | mm=%.4f\n', ...
+        met.rho_opt, met.xi_opt, met.sum_rate, met.max_min_rate);
+end
 end
 
 function rho_max = local_rho_max_from_harvest(ch, Pt, h)
