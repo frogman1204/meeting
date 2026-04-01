@@ -57,17 +57,16 @@ res_sic = run_or_empty('sic', enabled, params);
 res_tags = run_or_empty('tags', enabled, params);
 
 all_results = struct('power',res_power,'csi',res_csi,'blockage',res_blk,'rho',res_rho,'sic',res_sic,'tags',res_tags);
-if strcmpi(local_get_or(params,'experiment_mode','research_rsma'),'paper_reproduction')
+exp_mode0 = local_get_or(params,'experiment_mode','research_rsma');
+if strcmpi(exp_mode0,'paper_reproduction')
     tables = { ...
      struct('name','tbl_power_paper.csv','table',calc_pack('build_table_from_results',res_power)), ...
      struct('name','tbl_sic_paper.csv','table',calc_pack('build_table_from_results',res_sic))};
 else
     tables = { ...
-     struct('name','tbl_power.csv','table',calc_pack('build_table_from_results',res_power)), ...
-     struct('name','tbl_csi.csv','table',calc_pack('build_table_from_results',res_csi)), ...
-     struct('name','tbl_blockage.csv','table',calc_pack('build_table_from_results',res_blk)), ...
-     struct('name','tbl_rho.csv','table',calc_pack('build_table_from_results',res_rho)), ...
-     struct('name','tbl_sic.csv','table',calc_pack('build_table_from_results',res_sic))};
+     struct('name','tbl_power_research.csv','table',calc_pack('build_table_from_results',res_power)), ...
+     struct('name','tbl_sic_research.csv','table',calc_pack('build_table_from_results',res_sic)), ...
+     struct('name','tbl_blockage_research.csv','table',calc_pack('build_table_from_results',res_blk))};
 end
 
 figs = {};
@@ -82,13 +81,13 @@ if strcmpi(exp_mode, 'paper_reproduction')
     end
 else
     if local_get_or(pcfg, 'plot_power_mm', true)
-        figs{end+1}=item('power_maxmin',plot_pack('metric_main6',res_power.x_values,res_power.max_min_rate,params.scheme_names,'Transmit power (dBm)','Max-min rate (bit/s/Hz)','Max-min rate vs transmit power'));
+        figs{end+1}=item('fig_main_power_maxmin',plot_pack('metric_main6',res_power.x_values,res_power.max_min_rate,params.scheme_names,'Transmit power (dBm)','Max-min rate (bit/s/Hz)','Figure 1: Max-min rate vs transmit power'));
     end
     if local_get_or(pcfg, 'plot_power_sum', true)
         figs{end+1}=item('power_sumrate',plot_pack('metric',res_power.x_values,res_power.sum_rate,params.scheme_names,'Transmit power (dBm)','Sum-rate (bit/s/Hz)','Power vs sum-rate'));
     end
     if local_get_or(pcfg, 'plot_blockage_mm', true)
-        figs{end+1}=item('blockage_maxmin',plot_pack('metric',res_blk.x_values,res_blk.max_min_rate,params.scheme_names,'Blockage (dB)','Max-min rate','Blockage vs max-min rate'));
+        figs{end+1}=item('fig_blockage_maxmin',plot_pack('metric',res_blk.x_values,res_blk.max_min_rate,params.scheme_names,'Blockage (dB)','Max-min rate','Figure 3 (optional): Max-min rate vs blockage'));
     end
     if local_get_or(pcfg, 'plot_csi', true)
         figs{end+1}=item('csi_maxmin',plot_pack('metric',res_csi.x_values,res_csi.max_min_rate,params.scheme_names,'CSI error','Max-min rate','CSI sweep'));
@@ -97,7 +96,7 @@ else
         figs{end+1}=item('rho_maxmin',plot_pack('metric',res_rho.x_values,res_rho.max_min_rate,params.scheme_names,'rho','Max-min rate','rho sweep'));
     end
     if local_get_or(pcfg, 'plot_sic', true)
-        figs{end+1}=item('sic_maxmin',plot_pack('metric_main6',res_sic.x_values,res_sic.max_min_rate,params.scheme_names,'SIC error','Max-min rate (bit/s/Hz)','Max-min rate vs SIC error'));
+        figs{end+1}=item('fig_sic_maxmin',plot_pack('metric_main6',res_sic.x_values,res_sic.max_min_rate,params.scheme_names,'SIC error','Max-min rate (bit/s/Hz)','Figure 2: Max-min rate vs SIC error'));
     end
     if local_get_or(pcfg, 'plot_rsma_diag', true) && isfield(res_power,'rsma_opt_all_common_frac')
         diag_mat = repmat(res_power.rsma_opt_all_common_frac, 1, 1);
@@ -262,6 +261,14 @@ if strcmpi(exp_mode,'paper_reproduction')
 else
     row=res_power.max_min_rate(idx40,:); [~,best_idx]=max(row);
     lines{end+1}=sprintf('At Pt = %.1f dBm, best max-min scheme: %s.',p.Pt_dBm_vec(idx40),p.scheme_names{best_idx});
+    [vals, ord] = sort(row, 'descend');
+    lines{end+1}=sprintf('Ordering at highest Pt (max-min): %s', strjoin(p.scheme_names(ord), ' > '));
+    lines{end+1}=sprintf('Family gains (AmBC over baseline): OMA %.4f, NOMA %.4f, RSMA %.4f', ...
+        local_pair_gain(row, p.scheme_names, 'Pure OMA', 'OMA-AmBC'), ...
+        local_pair_gain(row, p.scheme_names, 'Pure NOMA', 'NOMA-AmBC'), ...
+        local_pair_gain(row, p.scheme_names, 'Pure RSMA', 'RSMA-AmBC'));
+    lines{end+1}=sprintf('RSMA vs NOMA (best family members): %.4f', ...
+        local_best_of(row, p.scheme_names, {'Pure RSMA','RSMA-AmBC'}) - local_best_of(row, p.scheme_names, {'Pure NOMA','NOMA-AmBC'}));
 end
 if isfield(res_power,'rsma_opt_all_common_frac')
     lines{end+1}=sprintf('RSMA-opt all-common fraction (at reference Pt index): %.3f', res_power.rsma_opt_all_common_frac(idx40));
@@ -345,6 +352,18 @@ switch lower(key)
     otherwise
         aliases = {key};
 end
+end
+
+
+function g = local_pair_gain(row, names, base_name, ambc_name)
+ib = find(strcmp(names, base_name), 1);
+ia = find(strcmp(names, ambc_name), 1);
+if isempty(ib) || isempty(ia), g = NaN; else, g = row(ia) - row(ib); end
+end
+
+function b = local_best_of(row, names, cand)
+idx = find(ismember(names, cand));
+if isempty(idx), b = NaN; else, b = max(row(idx)); end
 end
 
 function v = local_get_or(s, k, d)
