@@ -169,7 +169,7 @@ for ix=1:nx
             key = p.scheme_keys{is};
             if any(strcmp(key, {'pure_oma','pure_noma','pure_rsma'}))
                 rho_arg_local = 0;
-            elseif any(strcmp(key, {'noma_fixed','rsma_fixed','oma_ambc'}))
+            elseif any(strcmp(key, {'oma_ambc'}))
                 rho_arg_local = rho_fixed;
             else
                 rho_arg_local = rho_grid;
@@ -322,11 +322,28 @@ end
 
 
 function sol = local_get_scheme_sol(sols, p, key)
-idx = find(strcmp(p.scheme_keys, key), 1);
+% Keep summary/stat extraction robust to legacy-vs-current naming.
+aliases = local_scheme_aliases(key);
+idx = [];
+for i = 1:numel(aliases)
+    idx = find(strcmp(p.scheme_keys, aliases{i}), 1);
+    if ~isempty(idx), break; end
+end
 if isempty(idx)
     sol = [];
 else
     sol = sols{idx};
+end
+end
+
+function aliases = local_scheme_aliases(key)
+switch lower(key)
+    case 'noma_opt'
+        aliases = {'noma_opt','noma_ambc'};
+    case 'rsma_opt'
+        aliases = {'rsma_opt','rsma_ambc'};
+    otherwise
+        aliases = {key};
 end
 end
 
