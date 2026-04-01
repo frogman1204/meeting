@@ -70,8 +70,3 @@ Quick research-mode sanity check:
 ```matlab
 validate_research_rsma(30)
 ```
-
-Research output-readiness check:
-```matlab
-validate_figures_research_rsma(20)
-```
