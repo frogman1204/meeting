@@ -277,7 +277,7 @@ exp_mode = local_get_or(p,'experiment_mode','research_rsma');
 if strcmpi(exp_mode,'paper_reproduction')
     fprintf('\n=== Paper-mode scheme comparison at Pt=%.1f dBm (sum-rate objective) ===\n', p.Pt_dBm_vec(idx));
 else
-    fprintf('\n=== Scheme comparison at Pt=%.1f dBm ===\n', p.Pt_dBm_vec(idx));
+    fprintf('\n=== Research-mode scheme comparison at Pt=%.1f dBm (max-min objective) ===\n', p.Pt_dBm_vec(idx));
 end
 for is = 1:numel(p.scheme_names)
     base = sprintf('%s | sum-rate=%.4f | max-min=%.4f | rho=%.3f', ...

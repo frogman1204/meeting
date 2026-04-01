@@ -10,7 +10,7 @@ switch lower(mode)
         met = noma_baseline_pack('pure', ch, Pt, sic_err, sigma2, 0, rate_threshold, harvest_cfg, xi_grid, experiment_mode);
     case 'noma_fixed'
         met = noma_baseline_pack('fixed', ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, harvest_cfg, xi_grid, experiment_mode);
-    case 'noma_opt'
+    case {'noma_opt','noma_ambc'}
         met = noma_baseline_pack('opt', ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, harvest_cfg, xi_grid, experiment_mode);
     case 'oma_ambc'
         met = noma_baseline_pack('oma', ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, harvest_cfg, xi_grid, experiment_mode);
@@ -18,7 +18,7 @@ switch lower(mode)
         met = rsma_proposed_pack('pure', ch, Pt, sic_err, sigma2, 0, rate_threshold, harvest_cfg);
     case 'rsma_fixed'
         met = rsma_proposed_pack('fixed', ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, harvest_cfg);
-    case 'rsma_opt'
+    case {'rsma_opt','rsma_ambc'}
         met = rsma_proposed_pack('opt', ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, harvest_cfg);
     otherwise
         error('Unknown solve mode: %s', mode);

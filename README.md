@@ -63,3 +63,10 @@ Paper-mode figures:
 - Sum-rate vs transmit power
 - Sum-rate vs SIC error
 (Other max-min / CSI / blockage / rho / RSMA diagnostic figures are intentionally suppressed in `paper_reproduction`.)
+
+
+For `research_rsma`, the main fairness comparison uses max-min rate across four families: Pure NOMA, NOMA-AmBC, Pure RSMA, RSMA-AmBC.
+Quick research-mode sanity check:
+```matlab
+validate_research_rsma(30)
+```

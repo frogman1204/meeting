@@ -120,7 +120,7 @@ end
 
 function c = local_plot_cfg()
 c.plot_power_mm = true;
-c.plot_power_sum = true;
+c.plot_power_sum = false;
 c.plot_blockage_mm = true;
 c.plot_csi = true;
 c.plot_rho = true;
@@ -135,8 +135,7 @@ switch lower(experiment_mode)
         keys = {'noma_opt','noma_fixed','pure_noma','oma_ambc'};
         names = {'Proposed NOMA-AmBC','Benchmark NOMA-AmBC (fixed rho)','Pure NOMA','OMA-AmBC'};
     otherwise
-        keys = {'pure_noma','noma_fixed','noma_opt','pure_rsma','rsma_fixed','rsma_opt'};
-        names = {'Pure NOMA','NOMA-AmBC (Fixed rho)','NOMA-AmBC (Optimized rho)', ...
-            'Pure RSMA','RSMA-AmBC (Fixed rho)','RSMA-AmBC (Optimized rho)'};
+        keys = {'pure_noma','noma_ambc','pure_rsma','rsma_ambc'};
+        names = {'Pure NOMA','NOMA-AmBC','Pure RSMA','RSMA-AmBC'};
 end
 end
