@@ -8,8 +8,8 @@ function fig = plot_pack(mode, varargin)
 switch lower(mode)
     case 'metric'
         fig = local_metric(varargin{:});
-    case 'metric_main4'
-        fig = local_metric_main4(varargin{:});
+    case 'metric_main6'
+        fig = local_metric_main6(varargin{:});
     case 'gain'
         fig = local_gain_plot(varargin{:});
     case 'ber'
@@ -28,18 +28,18 @@ legend(legend_names, 'Location', 'bestoutside');
 end
 
 
-function fig = local_metric_main4(x, Y, legend_names, xlab, ylab, ttl)
-% Publication-style main comparison plot for the 4 research schemes.
+function fig = local_metric_main6(x, Y, legend_names, xlab, ylab, ttl)
+% Publication-style main comparison plot for the 6 research schemes.
 fig = figure('Color','w');
 ax = axes(fig); hold(ax, 'on');
-markers = {'o','s','d','^'};
-for i = 1:min(4, size(Y,2))
+markers = {'v','>','o','s','d','^'};
+for i = 1:min(6, size(Y,2))
     plot(ax, x, Y(:,i), ['-' markers{i}], 'LineWidth', 1.8, 'MarkerSize', 7);
 end
 grid(ax, 'on'); box(ax, 'on');
 set(ax, 'FontName', 'Times New Roman');
 xlabel(xlab); ylabel(ylab); title(ttl);
-legend(legend_names(1:min(4,end)), 'Location', 'best');
+legend(legend_names(1:min(6,end)), 'Location', 'best');
 hold(ax, 'off');
 end
 

@@ -6,6 +6,8 @@ if nargin >= 9, xi_grid = varargin{2}; else, xi_grid = 0.05:0.05:0.95; end
 if nargin >= 10, experiment_mode = varargin{3}; else, experiment_mode = 'research_rsma'; end
 
 switch lower(mode)
+    case 'pure_oma'
+        met = noma_baseline_pack('oma_pure', ch, Pt, sic_err, sigma2, 0, rate_threshold, harvest_cfg, xi_grid, experiment_mode);
     case 'pure_noma'
         met = noma_baseline_pack('pure', ch, Pt, sic_err, sigma2, 0, rate_threshold, harvest_cfg, xi_grid, experiment_mode);
     case 'noma_fixed'

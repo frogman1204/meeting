@@ -65,7 +65,7 @@ Paper-mode figures:
 (Other max-min / CSI / blockage / rho / RSMA diagnostic figures are intentionally suppressed in `paper_reproduction`.)
 
 
-For `research_rsma`, the main fairness comparison uses max-min rate across four families: Pure NOMA, NOMA-AmBC (Optimized), Pure RSMA, RSMA-AmBC (Optimized).
+For `research_rsma`, the main fairness comparison uses max-min rate across six families: Pure OMA, OMA-AmBC, Pure NOMA, NOMA-AmBC, Pure RSMA, RSMA-AmBC.
 Quick research-mode sanity check:
 ```matlab
 validate_research_rsma(30)

@@ -82,7 +82,7 @@ if strcmpi(exp_mode, 'paper_reproduction')
     end
 else
     if local_get_or(pcfg, 'plot_power_mm', true)
-        figs{end+1}=item('power_maxmin',plot_pack('metric_main4',res_power.x_values,res_power.max_min_rate,params.scheme_names,'Transmit power (dBm)','Max-min rate (bit/s/Hz)','Max-min rate vs transmit power'));
+        figs{end+1}=item('power_maxmin',plot_pack('metric_main6',res_power.x_values,res_power.max_min_rate,params.scheme_names,'Transmit power (dBm)','Max-min rate (bit/s/Hz)','Max-min rate vs transmit power'));
     end
     if local_get_or(pcfg, 'plot_power_sum', true)
         figs{end+1}=item('power_sumrate',plot_pack('metric',res_power.x_values,res_power.sum_rate,params.scheme_names,'Transmit power (dBm)','Sum-rate (bit/s/Hz)','Power vs sum-rate'));
@@ -97,7 +97,7 @@ else
         figs{end+1}=item('rho_maxmin',plot_pack('metric',res_rho.x_values,res_rho.max_min_rate,params.scheme_names,'rho','Max-min rate','rho sweep'));
     end
     if local_get_or(pcfg, 'plot_sic', true)
-        figs{end+1}=item('sic_maxmin',plot_pack('metric_main4',res_sic.x_values,res_sic.max_min_rate,params.scheme_names,'SIC error','Max-min rate (bit/s/Hz)','Max-min rate vs SIC error'));
+        figs{end+1}=item('sic_maxmin',plot_pack('metric_main6',res_sic.x_values,res_sic.max_min_rate,params.scheme_names,'SIC error','Max-min rate (bit/s/Hz)','Max-min rate vs SIC error'));
     end
     if local_get_or(pcfg, 'plot_rsma_diag', true) && isfield(res_power,'rsma_opt_all_common_frac')
         diag_mat = repmat(res_power.rsma_opt_all_common_frac, 1, 1);
@@ -167,7 +167,7 @@ for ix=1:nx
         sols = cell(1, ns);
         for is=1:ns
             key = p.scheme_keys{is};
-            if any(strcmp(key, {'pure_noma','pure_rsma'}))
+            if any(strcmp(key, {'pure_oma','pure_noma','pure_rsma'}))
                 rho_arg_local = 0;
             elseif any(strcmp(key, {'noma_fixed','rsma_fixed','oma_ambc'}))
                 rho_arg_local = rho_fixed;

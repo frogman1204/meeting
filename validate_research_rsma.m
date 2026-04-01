@@ -12,9 +12,9 @@ fprintf('\n[validate_research_rsma] experiment_mode=%s\n', p.experiment_mode);
 fprintf('[validate_research_rsma] primary_metric=max-min-rate\n');
 fprintf('[validate_research_rsma] scheme_names=%s\n', strjoin(p.scheme_names, ', '));
 
-expected = {'Pure NOMA','NOMA-AmBC (Optimized)','Pure RSMA','RSMA-AmBC (Optimized)'};
+expected = {'Pure OMA','OMA-AmBC','Pure NOMA','NOMA-AmBC','Pure RSMA','RSMA-AmBC'};
 has_four = all(ismember(expected, p.scheme_names));
-fprintf('[validate_research_rsma] four_target_families_present=%d\n', has_four);
+fprintf('[validate_research_rsma] six_target_families_present=%d\n', has_four);
 
 paper_untouched = true;
 pp = get_pack('paper_reproduction');
@@ -34,5 +34,6 @@ for i = 1:numel(ord_names)
 end
 
 fprintf('[validate_research_rsma] main_figure_metric=max-min-rate (power_maxmin)\n');
+fprintf('[validate_research_rsma] oma_family_sic_note=OMA-family uses OMA formulas without SIC term; SIC sweeps are expected to be SIC-independent in-model.\n');
 fprintf('[validate_research_rsma] done.\n\n');
 end

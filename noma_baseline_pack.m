@@ -12,6 +12,8 @@ switch lower(mode)
         met = local_noma_optimize(ch, Pt, sic_err, sigma2, rho_arg, xi_grid, rate_threshold, harvest_cfg, false, experiment_mode, true);
     case 'opt'
         met = local_noma_optimize(ch, Pt, sic_err, sigma2, rho_arg, xi_grid, rate_threshold, harvest_cfg, true, experiment_mode, true);
+    case 'oma_pure'
+        met = local_oma_eval(ch, Pt, sigma2, 0, rate_threshold);
     case 'oma'
         met = local_oma_eval(ch, Pt, sigma2, rho_arg(1), rate_threshold);
     otherwise

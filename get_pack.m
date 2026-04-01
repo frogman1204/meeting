@@ -135,7 +135,7 @@ switch lower(experiment_mode)
         keys = {'noma_opt','noma_fixed','pure_noma','oma_ambc'};
         names = {'Proposed NOMA-AmBC','Benchmark NOMA-AmBC (fixed rho)','Pure NOMA','OMA-AmBC'};
     otherwise
-        keys = {'pure_noma','noma_ambc','pure_rsma','rsma_ambc'};
-        names = {'Pure NOMA','NOMA-AmBC (Optimized)','Pure RSMA','RSMA-AmBC (Optimized)'};
+        keys = {'pure_oma','oma_ambc','pure_noma','noma_ambc','pure_rsma','rsma_ambc'};
+        names = {'Pure OMA','OMA-AmBC','Pure NOMA','NOMA-AmBC','Pure RSMA','RSMA-AmBC'};
 end
 end
