@@ -10,6 +10,8 @@ switch lower(mode)
         fig = local_metric(varargin{:});
     case 'metric_main6'
         fig = local_metric_main6(varargin{:});
+    case 'metric_sic4'
+        fig = local_metric_sic4(varargin{:});
     case 'gain'
         fig = local_gain_plot(varargin{:});
     case 'ber'
@@ -41,6 +43,21 @@ set(ax, 'FontName', 'Times New Roman');
 xlabel(xlab); ylabel(ylab); title(ttl);
 legend(legend_names(1:min(6,end)), 'Location', 'best');
 hold(ax, 'off');
+end
+
+
+function fig = local_metric_sic4(x, Y, legend_names, xlab, ylab, ttl)
+fig = figure('Color','w');
+ax = axes(fig); hold(ax, 'on');
+markers = {'o','s','d','^'};
+for i = 1:min(4, size(Y,2))
+    plot(ax, x, Y(:,i), ['-' markers{i}], 'LineWidth', 1.8, 'MarkerSize', 7);
+end
+grid(ax,'on'); box(ax,'on');
+set(ax,'FontName','Times New Roman');
+xlabel(xlab); ylabel(ylab); title(ttl);
+legend(legend_names(1:min(4,end)), 'Location', 'best');
+hold(ax,'off');
 end
 
 function fig = local_gain_plot(x, gain_abs, gain_rel, xlab, base_label, opt_label)

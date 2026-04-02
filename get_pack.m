@@ -84,6 +84,8 @@ p.sigma2 = 0.1;
 p.rng_seed = 1;
 p.harvest_cfg.enable = false;
 p.enabled_sweeps = {'power','sic'};
+p.miso_cfg.M = 1;
+p.ambc_cfg = local_ambc_cfg('reflection_only');
 p.plot_cfg.plot_power_mm = false;
 p.plot_cfg.plot_power_sum = true;
 p.plot_cfg.plot_blockage_mm = false;
@@ -103,6 +105,17 @@ p.sigma2 = 0.1;
 p.rng_seed = 1;
 p.harvest_cfg = local_harvest_cfg();
 p.plot_cfg = local_plot_cfg();
+p.miso_cfg = struct('M',4);
+p.ambc_cfg = local_ambc_cfg('ook_modulated');
+end
+
+
+function a = local_ambc_cfg(mode_name)
+a.mode = mode_name;                % 'reflection_only' | 'ook_modulated'
+a.beta_reflect = 0.5;              % nominal reflection level
+a.Gamma0 = 0.0;
+a.Gamma1 = a.beta_reflect;
+a.bits_per_symbol = 1;
 end
 
 function h = local_harvest_cfg()

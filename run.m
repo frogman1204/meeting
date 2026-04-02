@@ -96,7 +96,9 @@ else
         figs{end+1}=item('rho_maxmin',plot_pack('metric',res_rho.x_values,res_rho.max_min_rate,params.scheme_names,'rho','Max-min rate','rho sweep'));
     end
     if local_get_or(pcfg, 'plot_sic', true)
-        figs{end+1}=item('fig_sic_maxmin',plot_pack('metric_main6',res_sic.x_values,res_sic.max_min_rate,params.scheme_names,'SIC error','Max-min rate (bit/s/Hz)','Figure 2: Max-min rate vs SIC error'));
+        idx_nonoma = find(~contains(string(params.scheme_names), 'OMA'));
+        figs{end+1}=item('fig_sic_maxmin',plot_pack('metric_sic4',res_sic.x_values,res_sic.max_min_rate(:,idx_nonoma),params.scheme_names(idx_nonoma),'SIC error','Max-min rate (bit/s/Hz)','Figure 2: Max-min rate vs SIC error (NOMA/RSMA only)'));
+        figs{end+1}=item('fig_sic_sumrate',plot_pack('metric_sic4',res_sic.x_values,res_sic.sum_rate(:,idx_nonoma),params.scheme_names(idx_nonoma),'SIC error','Sum-rate (bit/s/Hz)','SIC sum-rate (NOMA/RSMA only)'));
     end
     if local_get_or(pcfg, 'plot_rsma_diag', true) && isfield(res_power,'rsma_opt_all_common_frac')
         diag_mat = repmat(res_power.rsma_opt_all_common_frac, 1, 1);
@@ -162,7 +164,7 @@ for ix=1:nx
         if imc == 1 || imc == p.numMC || mod(imc, tick_mc) == 0
             fprintf('  [sweep:%s x:%d/%d] MC %d/%d\n', kind, ix, nx, imc, p.numMC);
         end
-        ch=apply_pack('generate_channels'); ch=apply_pack('apply_csi_error',ch,csi); ch=apply_pack('apply_blockage_effect',ch,blk);
+        ch=apply_pack('generate_channels', p); ch=apply_pack('apply_csi_error',ch,csi); ch=apply_pack('apply_blockage_effect',ch,blk);
         sols = cell(1, ns);
         for is=1:ns
             key = p.scheme_keys{is};
@@ -173,7 +175,7 @@ for ix=1:nx
             else
                 rho_arg_local = rho_grid;
             end
-            sols{is} = solve_pack(key,ch,Pt,sic,p.sigma2,rho_arg_local,p.rate_threshold,p.harvest_cfg,p.xi_grid,local_get_or(p,'experiment_mode','research_rsma'));
+            sols{is} = solve_pack(key,ch,Pt,sic,p.sigma2,rho_arg_local,p.rate_threshold,p.harvest_cfg,p.xi_grid,local_get_or(p,'experiment_mode','research_rsma'), local_get_or(p,'ambc_cfg',struct()));
         end
         nopt = local_get_scheme_sol(sols, p, 'noma_opt');
         ropt = local_get_scheme_sol(sols, p, 'rsma_opt');

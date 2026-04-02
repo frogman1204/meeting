@@ -73,3 +73,8 @@ validate_pack('research_rsma', 30)
 validate_pack('paper_reproduction', 40)
 validate_pack('guarded')
 ```
+
+MISO AmBC modes:
+- `ambc_cfg.mode='reflection_only'`: reflection baseline
+- `ambc_cfg.mode='ook_modulated'`: OOK-modulated tag with `Gamma0/Gamma1`
+Design uses estimated channels; rate evaluation uses true channels.
