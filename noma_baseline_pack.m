@@ -23,7 +23,7 @@ switch lower(mode)
         if strcmpi(experiment_mode, 'paper_reproduction')
             met = local_oma_eval(ch, Pt, sigma2, rho_arg(1), rate_threshold);
         else
-            met = local_sdma_opt(ch, Pt, sigma2, rho_arg(1), xi_grid, rate_threshold, ambc_cfg);
+            met = local_sdma_opt(ch, Pt, sigma2, rho_arg, xi_grid, rate_threshold, ambc_cfg);
         end
     otherwise
         error('Unknown NOMA baseline mode: %s', mode);
@@ -50,21 +50,25 @@ met = calc_pack('compute_metrics_scheme', R1, R2, total_power, rho, rho, rate_th
 met.xi_used = NaN;
 end
 
-function met = local_sdma_opt(ch, Pt, sigma2, rho, xi_grid, rate_threshold, ambc_cfg)
+function met = local_sdma_opt(ch, Pt, sigma2, rho_arg, xi_grid, rate_threshold, ambc_cfg)
 best_primary = -inf; best_secondary = -inf;
-best_xi = xi_grid(1); best_met = [];
-for ix = 1:numel(xi_grid)
-    xi = xi_grid(ix);
-    [R1, R2, out] = core('rates_sdma', ch, Pt, sigma2, rho, xi, ambc_cfg);
-    total_power = Pt + 0.1 + 0.05*rho;
-    tmp = calc_pack('compute_metrics_scheme', R1, R2, total_power, rho, rho, rate_threshold);
-    tmp.xi_used = xi;
-    if isfield(out,'tag_ber'), tmp.ber_tag = out.tag_ber; end
-    primary = tmp.max_min_rate; secondary = tmp.sum_rate;
-    if (primary > best_primary + 1e-12) || (abs(primary-best_primary) <= 1e-12 && secondary > best_secondary)
-        best_primary = primary; best_secondary = secondary; best_xi = xi; best_met = tmp;
+best_xi = xi_grid(1); best_met = []; best_rho = rho_arg(1);
+for ir = 1:numel(rho_arg)
+    rho = rho_arg(ir);
+    for ix = 1:numel(xi_grid)
+        xi = xi_grid(ix);
+        [R1, R2, out] = core('rates_sdma', ch, Pt, sigma2, rho, xi, ambc_cfg);
+        total_power = Pt + 0.1 + 0.05*rho;
+        tmp = calc_pack('compute_metrics_scheme', R1, R2, total_power, rho, rho, rate_threshold);
+        tmp.xi_used = xi;
+        if isfield(out,'tag_ber'), tmp.ber_tag = out.tag_ber; end
+        primary = tmp.max_min_rate; secondary = tmp.sum_rate;
+        if (primary > best_primary + 1e-12) || (abs(primary-best_primary) <= 1e-12 && secondary > best_secondary)
+            best_primary = primary; best_secondary = secondary; best_xi = xi; best_rho = rho; best_met = tmp;
+        end
     end
 end
+best_met.rho_opt = best_rho;
 best_met.xi_opt = best_xi;
 met = best_met;
 end

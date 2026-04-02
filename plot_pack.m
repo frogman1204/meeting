@@ -42,6 +42,7 @@ grid(ax, 'on'); box(ax, 'on');
 set(ax, 'FontName', 'Times New Roman');
 xlabel(xlab); ylabel(ylab); title(ttl);
 legend(legend_names(1:min(6,end)), 'Location', 'best');
+local_annotate_gap_gain(ax, x, Y, legend_names);
 hold(ax, 'off');
 end
 
@@ -58,6 +59,33 @@ set(ax,'FontName','Times New Roman');
 xlabel(xlab); ylabel(ylab); title(ttl);
 legend(legend_names(1:min(4,end)), 'Location', 'best');
 hold(ax,'off');
+end
+
+function local_annotate_gap_gain(ax, x, Y, legend_names)
+if isempty(x) || size(Y,1) ~= numel(x), return; end
+x0 = x(end);
+pairs = {
+    'Pure SDMA', 'SDMA-AmBC';
+    'Pure NOMA', 'NOMA-AmBC';
+    'Pure RSMA', 'RSMA-AmBC'
+};
+dx = 0.02 * max(1, max(x)-min(x));
+for ip = 1:size(pairs,1)
+    ib = find(strcmp(legend_names, pairs{ip,1}), 1);
+    io = find(strcmp(legend_names, pairs{ip,2}), 1);
+    if isempty(ib) || isempty(io), continue; end
+    yb = Y(end, ib); yo = Y(end, io);
+    if ~isfinite(yb) || ~isfinite(yo), continue; end
+    y1 = min(yb, yo); y2 = max(yb, yo);
+    xk = x0 + (ip-2)*dx;
+    line(ax, [xk xk], [y1 y2], 'Color', [0.15 0.15 0.15], 'LineStyle', '-', 'LineWidth', 1.6);
+    line(ax, [xk-0.15*dx xk+0.15*dx], [y1 y1], 'Color', [0.15 0.15 0.15], 'LineWidth', 1.6);
+    line(ax, [xk-0.15*dx xk+0.15*dx], [y2 y2], 'Color', [0.15 0.15 0.15], 'LineWidth', 1.6);
+    dabs = yo - yb; drel = 100 * dabs / max(abs(yb), 1e-9);
+    txt = sprintf('%+.2f bps/Hz (%+.1f%%)', dabs, drel);
+    yt = y2 + 0.03*(max(Y(:))-min(Y(:))+eps) + 0.02*(ip-1)*(max(Y(:))-min(Y(:))+eps);
+    text(ax, xk + 0.05*dx, yt, txt, 'FontSize', 9, 'FontWeight', 'bold', 'Color', [0.05 0.05 0.05]);
+end
 end
 
 function fig = local_gain_plot(x, gain_abs, gain_rel, xlab, base_label, opt_label)

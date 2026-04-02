@@ -23,7 +23,7 @@ run('debug')
 ## Paper reproduction settings
 `get_pack('paper_reproduction')` uses:
 - `numMC = 1000`
-- `Pt_dBm_vec = 10:3:40`
+- `Pt_dBm_vec = 0:5:40`
 - `sic_err_vec = 0.1:0.1:0.9`
 - `xi_grid = 0.02:0.02:0.5`
 - `rho_grid = 0:0.02:1`
@@ -66,6 +66,7 @@ Paper-mode figures:
 
 
 For `research_rsma`, the main fairness comparison uses max-min rate across six families: Pure SDMA, SDMA-AmBC, Pure NOMA, NOMA-AmBC, Pure RSMA, RSMA-AmBC.
+Default research/paper power sweeps are set to `Pt_dBm_vec = 0:5:40`.
 
 Unified validation pack:
 ```matlab
