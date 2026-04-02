@@ -96,7 +96,7 @@ else
         figs{end+1}=item('rho_maxmin',plot_pack('metric',res_rho.x_values,res_rho.max_min_rate,params.scheme_names,'rho','Max-min rate','rho sweep'));
     end
     if local_get_or(pcfg, 'plot_sic', true)
-        idx_nonoma = find(~contains(string(params.scheme_names), 'OMA'));
+        idx_nonoma = find(~contains(string(params.scheme_names), 'OMA') & ~contains(string(params.scheme_names), 'SDMA'));
         figs{end+1}=item('fig_sic_maxmin',plot_pack('metric_sic4',res_sic.x_values,res_sic.max_min_rate(:,idx_nonoma),params.scheme_names(idx_nonoma),'SIC error','Max-min rate (bit/s/Hz)','Figure 2: Max-min rate vs SIC error (NOMA/RSMA only)'));
         figs{end+1}=item('fig_sic_sumrate',plot_pack('metric_sic4',res_sic.x_values,res_sic.sum_rate(:,idx_nonoma),params.scheme_names(idx_nonoma),'SIC error','Sum-rate (bit/s/Hz)','SIC sum-rate (NOMA/RSMA only)'));
     end
@@ -168,7 +168,7 @@ for ix=1:nx
         sols = cell(1, ns);
         for is=1:ns
             key = p.scheme_keys{is};
-            if any(strcmp(key, {'pure_oma','pure_noma','pure_rsma'}))
+            if any(strcmp(key, {'pure_oma','pure_sdma','pure_noma','pure_rsma'}))
                 rho_arg_local = 0;
             elseif any(strcmp(key, {'oma_ambc'}))
                 rho_arg_local = rho_fixed;
@@ -266,7 +266,7 @@ else
     [vals, ord] = sort(row, 'descend');
     lines{end+1}=sprintf('Ordering at highest Pt (max-min): %s', strjoin(p.scheme_names(ord), ' > '));
     lines{end+1}=sprintf('Family gains (AmBC over baseline): OMA %.4f, NOMA %.4f, RSMA %.4f', ...
-        local_pair_gain(row, p.scheme_names, 'Pure OMA', 'OMA-AmBC'), ...
+        local_pair_gain(row, p.scheme_names, 'Pure SDMA', 'SDMA-AmBC'), ...
         local_pair_gain(row, p.scheme_names, 'Pure NOMA', 'NOMA-AmBC'), ...
         local_pair_gain(row, p.scheme_names, 'Pure RSMA', 'RSMA-AmBC'));
     lines{end+1}=sprintf('RSMA vs NOMA (best family members): %.4f', ...

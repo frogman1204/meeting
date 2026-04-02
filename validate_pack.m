@@ -26,7 +26,7 @@ p.enabled_sweeps = {'power','sic','blockage'};
 fprintf('\n[validate_research_rsma] experiment_mode=%s\n', p.experiment_mode);
 fprintf('[validate_research_rsma] primary_metric=max-min-rate\n');
 fprintf('[validate_research_rsma] scheme_names=%s\n', strjoin(p.scheme_names, ', '));
-expected = {'Pure OMA','OMA-AmBC','Pure NOMA','NOMA-AmBC','Pure RSMA','RSMA-AmBC'};
+expected = {'Pure SDMA','SDMA-AmBC','Pure NOMA','NOMA-AmBC','Pure RSMA','RSMA-AmBC'};
 has_six = all(ismember(expected, p.scheme_names));
 fprintf('[validate_research_rsma] six_target_families_present=%d\n', has_six);
 pp = get_pack('paper_reproduction');
@@ -42,7 +42,7 @@ for i = 1:numel(ord_names), fprintf('  %d) %s : %.4f\n', i, ord_names{i}, vals(i
 fprintf('[validate_research_rsma] best_scheme_highest_power=%s\n', ord_names{1});
 fprintf('[validate_research_rsma] main_figure_metric=max-min-rate (fig_main_power_maxmin)\n');
 fprintf('[validate_research_rsma] saved_filenames=%s\n', strjoin({'fig_main_power_maxmin.png','fig_sic_maxmin.png','fig_blockage_maxmin.png','tbl_power_research.csv','tbl_sic_research.csv','tbl_blockage_research.csv'}, ', '));
-fprintf('[validate_research_rsma] oma_family_sic_note=OMA-family uses OMA formulas without SIC term; SIC sweeps are expected to be SIC-independent in-model.\n');
+fprintf('[validate_research_rsma] oma_family_sic_note=SDMA-family uses OMA formulas without SIC term; SIC sweeps are expected to be SIC-independent in-model.\n');
 fprintf('[validate_research_rsma] done.\n\n');
 end
 

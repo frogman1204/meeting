@@ -7,7 +7,7 @@ if nargin >= 10, experiment_mode = varargin{3}; else, experiment_mode = 'researc
 if nargin >= 11, ambc_cfg = varargin{4}; else, ambc_cfg = struct(); end
 
 switch lower(mode)
-    case 'pure_oma'
+    case {'pure_oma','pure_sdma'}
         met = noma_baseline_pack('oma_pure', ch, Pt, sic_err, sigma2, 0, rate_threshold, harvest_cfg, xi_grid, experiment_mode, ambc_cfg);
     case 'pure_noma'
         met = noma_baseline_pack('pure', ch, Pt, sic_err, sigma2, 0, rate_threshold, harvest_cfg, xi_grid, experiment_mode, ambc_cfg);
@@ -15,7 +15,7 @@ switch lower(mode)
         met = noma_baseline_pack('fixed', ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, harvest_cfg, xi_grid, experiment_mode, ambc_cfg);
     case {'noma_opt','noma_ambc'}
         met = noma_baseline_pack('opt', ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, harvest_cfg, xi_grid, experiment_mode, ambc_cfg);
-    case 'oma_ambc'
+    case {'oma_ambc','sdma_ambc'}
         met = noma_baseline_pack('oma', ch, Pt, sic_err, sigma2, rho_arg, rate_threshold, harvest_cfg, xi_grid, experiment_mode, ambc_cfg);
     case 'pure_rsma'
         met = rsma_proposed_pack('pure', ch, Pt, sic_err, sigma2, 0, rate_threshold, harvest_cfg, ambc_cfg);

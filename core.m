@@ -144,11 +144,33 @@ c1 = d12 + 1e-6;
 c2 = d21 + 1e-6;
 
 snr_tag = Pt * abs(local_get_or(ambc_cfg,'Gamma1',0.5) - local_get_or(ambc_cfg,'Gamma0',0))^2 * (r1+r2)/2;
-tag_ber = 0.5*exp(-snr_tag/max(1e-9,1)); % simple proxy BER
+if strcmpi(local_get_or(ambc_cfg,'mode','reflection_only'),'ook_modulated')
+    tag_ber = local_tag_ook_ber(snr_tag, ambc_cfg);
+else
+    tag_ber = NaN;
+end
 end
 
 function a = local_default_ambc_cfg()
-a = struct('mode','reflection_only','beta_reflect',0.5,'Gamma0',0,'Gamma1',0.5,'bits_per_symbol',1);
+a = struct('mode','reflection_only','beta_reflect',0.5,'Gamma0',0,'Gamma1',0.5,'bits_per_symbol',1,'ber_max_bits',1e6,'ber_min_errors',100);
+end
+
+
+function ber = local_tag_ook_ber(snr_lin, ambc_cfg)
+max_bits = round(local_get_or(ambc_cfg, 'ber_max_bits', 1e6));
+min_err = round(local_get_or(ambc_cfg, 'ber_min_errors', 100));
+if max_bits <= 0, ber = NaN; return; end
+A = sqrt(max(snr_lin, 0));
+errs = 0; n = 0; blk = min(10000, max_bits);
+while n < max_bits && errs < min_err
+    nb = min(blk, max_bits - n);
+    b = randi([0,1], nb, 1);
+    y = A*b + randn(nb,1); % unit-noise OOK model
+    bhat = y > (A/2);
+    errs = errs + sum(bhat ~= b);
+    n = n + nb;
+end
+ber = errs / max(n,1);
 end
 
 function v = local_get_or(s, k, d)
