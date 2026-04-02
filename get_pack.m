@@ -135,12 +135,14 @@ end
 
 function c = local_plot_cfg()
 c.plot_power_mm = true;
-c.plot_power_sum = false;
+c.plot_power_sum = true;
 c.plot_blockage_mm = true;
 c.plot_csi = false;
 c.plot_rho = false;
 c.plot_sic = true;
 c.plot_rsma_diag = true;
+c.plot_rsma_power_modes = true;
+c.plot_tag_ber_power = true;
 c.plot_tags = false;
 end
 

@@ -84,7 +84,7 @@ else
         figs{end+1}=item('fig_main_power_maxmin',plot_pack('metric_main6',res_power.x_values,res_power.max_min_rate,params.scheme_names,'Transmit power (dBm)','Max-min rate (bit/s/Hz)','Figure 1: Max-min rate vs transmit power'));
     end
     if local_get_or(pcfg, 'plot_power_sum', true)
-        figs{end+1}=item('power_sumrate',plot_pack('metric',res_power.x_values,res_power.sum_rate,params.scheme_names,'Transmit power (dBm)','Sum-rate (bit/s/Hz)','Power vs sum-rate'));
+        figs{end+1}=item('fig_power_sumrate',plot_pack('metric_main6',res_power.x_values,res_power.sum_rate,params.scheme_names,'Transmit power (dBm)','Sum-rate (bit/s/Hz)','Figure 2: Sum-rate vs transmit power'));
     end
     if local_get_or(pcfg, 'plot_blockage_mm', true)
         figs{end+1}=item('fig_blockage_maxmin',plot_pack('metric',res_blk.x_values,res_blk.max_min_rate,params.scheme_names,'Blockage (dB)','Max-min rate','Figure 3 (optional): Max-min rate vs blockage'));
@@ -97,8 +97,19 @@ else
     end
     if local_get_or(pcfg, 'plot_sic', true)
         idx_nonoma = find(~contains(string(params.scheme_names), 'OMA') & ~contains(string(params.scheme_names), 'SDMA'));
-        figs{end+1}=item('fig_sic_maxmin',plot_pack('metric_sic4',res_sic.x_values,res_sic.max_min_rate(:,idx_nonoma),params.scheme_names(idx_nonoma),'SIC error','Max-min rate (bit/s/Hz)','Figure 2: Max-min rate vs SIC error (NOMA/RSMA only)'));
-        figs{end+1}=item('fig_sic_sumrate',plot_pack('metric_sic4',res_sic.x_values,res_sic.sum_rate(:,idx_nonoma),params.scheme_names(idx_nonoma),'SIC error','Sum-rate (bit/s/Hz)','SIC sum-rate (NOMA/RSMA only)'));
+        figs{end+1}=item('fig_sic_maxmin',plot_pack('metric_sic4',res_sic.x_values,res_sic.max_min_rate(:,idx_nonoma),params.scheme_names(idx_nonoma),'SIC error','Max-min rate (bit/s/Hz)','Figure 3: Max-min rate vs SIC error (NOMA/RSMA only)'));
+        figs{end+1}=item('fig_sic_sumrate',plot_pack('metric_sic4',res_sic.x_values,res_sic.sum_rate(:,idx_nonoma),params.scheme_names(idx_nonoma),'SIC error','Sum-rate (bit/s/Hz)','Figure 4: Sum-rate vs SIC error (NOMA/RSMA only)'));
+    end
+    if local_get_or(pcfg, 'plot_rsma_power_modes', true)
+        rsma_modes = local_rsma_mode_power_curves(params);
+        figs{end+1}=item('fig_rsma_power_maxmin_modes',plot_pack('metric',rsma_modes.x_values,rsma_modes.max_min_rate,rsma_modes.scheme_names,'Transmit power (dBm)','Max-min rate (bit/s/Hz)','Figure 5: Max-min rate vs transmit power (RSMA modes)'));
+        figs{end+1}=item('fig_rsma_power_sumrate_modes',plot_pack('metric',rsma_modes.x_values,rsma_modes.sum_rate,rsma_modes.scheme_names,'Transmit power (dBm)','Sum-rate (bit/s/Hz)','Figure 6: Sum-rate vs transmit power (RSMA modes)'));
+    end
+    if local_get_or(pcfg, 'plot_tag_ber_power', true)
+        [ber_names, ber_mat] = local_tag_ber_curves_from_power(res_power, params.scheme_names);
+        if ~isempty(ber_names)
+            figs{end+1}=item('fig_tag_ber_power',plot_pack('ber',res_power.x_values,ber_mat,ber_names,'Transmit power (dBm)','Figure 7: Tag BER vs transmit power'));
+        end
     end
     if local_get_or(pcfg, 'plot_rsma_diag', true) && isfield(res_power,'rsma_opt_all_common_frac')
         diag_mat = repmat(res_power.rsma_opt_all_common_frac, 1, 1);
@@ -250,6 +261,50 @@ res.x_values=p.tag_count_vec; res.scheme_names=p.scheme_names; res.sweep_name='t
 fns={'R1','R2','sum_rate','max_min_rate','jain_fairness','energy_efficiency','rho_used','rho_opt','ber_tag','ber_user1','ber_user2','outage_flag'};
 for k=1:numel(fns), res.(fns{k})=nan(nx,ns); end
 fprintf('[sweep:tags] WARNING: tags sweep is TODO/placeholder and currently returns NaN metrics.\n');
+end
+
+function rs = local_rsma_mode_power_curves(p)
+xvec = p.Pt_dBm_vec(:);
+nx = numel(xvec);
+names = {'Pure RSMA','RSMA-AmBC (reflection_only)','RSMA-AmBC (ook_modulated)'};
+rs = struct('x_values',xvec,'scheme_names',{names},'max_min_rate',nan(nx,3),'sum_rate',nan(nx,3));
+for ix = 1:nx
+    Pt = 10^((xvec(ix)-30)/10);
+    vals = nan(p.numMC, 3, 2);
+    for imc = 1:p.numMC
+        ch = apply_pack('generate_channels', p);
+        ch = apply_pack('apply_csi_error', ch, p.csi_err_vec(1));
+        ch = apply_pack('apply_blockage_effect', ch, p.blk_loss_dB_vec(1));
+        ambc_ref = p.ambc_cfg; ambc_ref.mode = 'reflection_only';
+        ambc_ook = p.ambc_cfg; ambc_ook.mode = 'ook_modulated';
+        s0 = solve_pack('pure_rsma', ch, Pt, p.sic_err_vec(1), p.sigma2, 0, p.rate_threshold, p.harvest_cfg, p.xi_grid, local_get_or(p,'experiment_mode','research_rsma'), ambc_ref);
+        s1 = solve_pack('rsma_ambc', ch, Pt, p.sic_err_vec(1), p.sigma2, p.rho_grid, p.rate_threshold, p.harvest_cfg, p.xi_grid, local_get_or(p,'experiment_mode','research_rsma'), ambc_ref);
+        s2 = solve_pack('rsma_ambc', ch, Pt, p.sic_err_vec(1), p.sigma2, p.rho_grid, p.rate_threshold, p.harvest_cfg, p.xi_grid, local_get_or(p,'experiment_mode','research_rsma'), ambc_ook);
+        vals(imc,1,:) = [s0.max_min_rate s0.sum_rate];
+        vals(imc,2,:) = [s1.max_min_rate s1.sum_rate];
+        vals(imc,3,:) = [s2.max_min_rate s2.sum_rate];
+    end
+    rs.max_min_rate(ix,:) = squeeze(mean(vals(:,:,1),1));
+    rs.sum_rate(ix,:) = squeeze(mean(vals(:,:,2),1));
+end
+end
+
+function [names, mat] = local_tag_ber_curves_from_power(res_power, scheme_names)
+want = {'RSMA-AmBC','NOMA-AmBC','SDMA-AmBC'};
+idx = find(ismember(scheme_names, want));
+if isempty(idx)
+    names = {}; mat = [];
+    return;
+end
+names = scheme_names(idx);
+mat = res_power.ber_tag(:, idx);
+keep = false(1, numel(idx));
+for i = 1:numel(idx)
+    col = mat(:,i);
+    keep(i) = any(isfinite(col));
+end
+names = names(keep);
+mat = mat(:,keep);
 end
 
 function lines = summary_local(mode_name,p,res_power)

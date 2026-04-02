@@ -98,7 +98,8 @@ end
 
 function fig = local_ber(x, ber_mat, legend_names, xlab, ttl)
 fig = figure('Color','w');
-plot(x, ber_mat, 'LineWidth', 1.6); grid on;
+ber_plot = max(ber_mat, 1e-6);
+semilogy(x, ber_plot, 'LineWidth', 1.8); grid on;
 xlabel(xlab); ylabel('BER'); title(ttl);
 legend(legend_names, 'Location', 'bestoutside');
 end
