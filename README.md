@@ -19,6 +19,7 @@ run('full')
 run('debug')
 ```
 `medium/full/debug` map to the `research_rsma` experiment mode.
+For these three modes, the BS antenna count is fixed to `M=4` (MISO).
 
 ## Paper reproduction settings
 `get_pack('paper_reproduction')` uses:
@@ -79,3 +80,4 @@ MISO AmBC modes:
 - `ambc_cfg.mode='reflection_only'`: reflection baseline
 - `ambc_cfg.mode='ook_modulated'`: OOK-modulated tag with `Gamma0/Gamma1`
 Design uses estimated channels; rate evaluation uses true channels.
+RSMA uses a minimal alternating WMMSE beamformer update (common + private precoders).

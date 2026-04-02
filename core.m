@@ -15,6 +15,8 @@ switch lower(mode)
         [varargout{1}, varargout{2}, varargout{3}] = local_rates_rsma(varargin{:});
     case 'rates_sdma'
         [varargout{1}, varargout{2}, varargout{3}] = local_rates_sdma(varargin{:});
+    case 'tag_ber'
+        varargout{1} = local_tag_ook_ber_samples(varargin{:});
     otherwise
         error('Unknown core mode: %s', mode);
 end
@@ -25,13 +27,13 @@ function ch = local_ch(p)
 M = local_get_or(local_get_or(p,'miso_cfg',struct()), 'M', 4);
 % MISO true channels
 ray = @(m,n) (randn(m,n) + 1i*randn(m,n))/sqrt(2);
-ch.h1_true = ray(M,1);
-ch.h2_true = ray(M,1);
+ch.h1_true = ray(M,1); % [M x 1] BS->User1
+ch.h2_true = ray(M,1); % [M x 1] BS->User2
 Kbt = 5; % LOS-dominant BS->Tag
-ch.hBT_true = sqrt(Kbt/(Kbt+1))*ones(M,1)/sqrt(M) + sqrt(1/(Kbt+1))*ray(M,1);
+ch.hBT_true = sqrt(Kbt/(Kbt+1))*ones(M,1)/sqrt(M) + sqrt(1/(Kbt+1))*ray(M,1); % [M x 1] BS->Tag
 Kt = 3;
-ch.gT1_true = sqrt(Kt/(Kt+1)) + sqrt(1/(Kt+1))*ray(1,1);
-ch.gT2_true = sqrt(Kt/(Kt+1)) + sqrt(1/(Kt+1))*ray(1,1);
+ch.gT1_true = sqrt(Kt/(Kt+1)) + sqrt(1/(Kt+1))*ray(1,1); % scalar Tag->User1
+ch.gT2_true = sqrt(Kt/(Kt+1)) + sqrt(1/(Kt+1))*ray(1,1); % scalar Tag->User2
 % Estimated channels init = true; CSI mismatch applied in apply_pack.
 ch.h1_est = ch.h1_true; ch.h2_est = ch.h2_true; ch.hBT_est = ch.hBT_true;
 ch.gT1_est = ch.gT1_true; ch.gT2_est = ch.gT2_true;
